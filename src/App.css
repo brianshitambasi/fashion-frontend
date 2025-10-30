@@ -36,3 +36,15 @@
     transform: rotate(360deg);
   }
 }
+
+.card {
+  border-radius: 15px;
+}
+
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.03);
+}
