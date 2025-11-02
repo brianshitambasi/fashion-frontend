@@ -1,58 +1,52 @@
-// components/shopowner/EditShop.jsx
-import React, { useState, useEffect, useContext } from "react";
-import axios from "axios";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext";
+// components/shopowner/EditShop.js
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 
 const EditShop = () => {
   const { id } = useParams();
-  const { token } = useContext(AuthContext);
   const navigate = useNavigate();
-  
-  const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [error, setError] = useState("");
-  
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    location: "",
-    description: "",
-    services: [{ serviceName: "", price: "" }],
-    image: null,
-    currentImage: ""
+    name: '',
+    location: '',
+    description: '',
+    services: [{ serviceName: '', price: '' }]
   });
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [currentImage, setCurrentImage] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchShopDetails();
+    fetchShop();
   }, [id]);
 
-  const fetchShopDetails = async () => {
+  const fetchShop = async () => {
     try {
-      setFetchLoading(true);
-      const res = await axios.get(`https://hair-salon-app-1.onrender.com/shop/${id}`);
-      
-      const shop = res.data;
-      console.log("Fetched shop data:", shop);
-      
-      setFormData({
-        name: shop.name || "",
-        location: shop.location || "",
-        description: shop.description || "",
-        services: shop.services && shop.services.length > 0 
-          ? shop.services.map(service => ({
-              serviceName: service.serviceName || "",
-              price: service.price || ""
-            }))
-          : [{ serviceName: "", price: "" }],
-        image: null,
-        currentImage: shop.image || ""
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`https://hair-salon-app-1.onrender.com/shop/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
+      const shop = response.data;
+      setFormData({
+        name: shop.name,
+        location: shop.location,
+        description: shop.description,
+        services: shop.services && shop.services.length > 0 ? shop.services : [{ serviceName: '', price: '' }]
+      });
+      
+      if (shop.image) {
+        setCurrentImage(shop.image);
+        setImagePreview(`https://hair-salon-app-1.onrender.com${shop.image}`);
+      }
     } catch (error) {
-      console.error("Error fetching shop details:", error);
-      setError("Failed to load shop details");
+      console.error('Error fetching shop:', error);
+      setError('Failed to load shop details');
     } finally {
-      setFetchLoading(false);
+      setLoading(false);
     }
   };
 
@@ -76,7 +70,7 @@ const EditShop = () => {
   const addService = () => {
     setFormData(prev => ({
       ...prev,
-      services: [...prev.services, { serviceName: "", price: "" }]
+      services: [...prev.services, { serviceName: '', price: '' }]
     }));
   };
 
@@ -91,291 +85,358 @@ const EditShop = () => {
   };
 
   const handleImageChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      image: e.target.files[0]
-    }));
+    const file = e.target.files[0];
+    if (file) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB');
+        return;
+      }
+
+      setImage(file);
+      setError('');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const removeImage = () => {
-    setFormData(prev => ({
-      ...prev,
-      image: null,
-      currentImage: ""
-    }));
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      setError('Salon name is required');
+      return false;
+    }
+    if (!formData.location.trim()) {
+      setError('Location is required');
+      return false;
+    }
+    if (!formData.description.trim()) {
+      setError('Description is required');
+      return false;
+    }
+
+    const validServices = formData.services.filter(service => 
+      service.serviceName.trim() && service.price > 0
+    );
+
+    if (validServices.length === 0) {
+      setError('At least one service with name and price is required');
+      return false;
+    }
+
+    setError('');
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setUpdating(true);
 
     try {
-      console.log("Submitting form data:", formData);
-
-      const data = new FormData();
-      data.append("name", formData.name);
-      data.append("location", formData.location);
-      data.append("description", formData.description);
+      const token = localStorage.getItem('token');
+      const submitData = new FormData();
+      submitData.append('name', formData.name.trim());
+      submitData.append('location', formData.location.trim());
+      submitData.append('description', formData.description.trim());
       
-      // Format services properly
-      const formattedServices = formData.services
-        .filter(service => service.serviceName.trim() && service.price)
-        .map(service => ({
-          serviceName: service.serviceName.trim(),
-          price: Number(service.price)
-        }));
+      const validServices = formData.services.filter(service => 
+        service.serviceName.trim() && service.price > 0
+      );
+      submitData.append('services', JSON.stringify(validServices));
       
-      data.append("services", JSON.stringify(formattedServices));
-      
-      if (formData.image) {
-        data.append("image", formData.image);
+      if (image) {
+        submitData.append('image', image);
       }
 
-      console.log("Sending data to server...");
-      
-      const res = await axios.put(`https://hair-salon-app-1.onrender.com/shop/${id}`, data, {
+      const response = await axios.put(`https://hair-salon-app-1.onrender.com/shop/${id}`, submitData, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data"
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       });
 
-      console.log("Update successful:", res.data);
-      navigate("/shopowner/shops");
-      
+      alert('Salon updated successfully!');
+      navigate('/shopowner/shops');
     } catch (error) {
-      console.error("Error updating shop:", error);
-      console.error("Error response:", error.response?.data);
-      
-      // More detailed error handling
-      if (error.response?.status === 500) {
-        setError("Server error: Please check if all required fields are filled correctly");
-      } else {
-        setError(error.response?.data?.message || error.response?.data?.error || "Failed to update shop");
-      }
+      console.error('Error updating shop:', error);
+      setError(error.response?.data?.message || 'Failed to update salon. Please try again.');
     } finally {
-      setLoading(false);
+      setUpdating(false);
     }
   };
 
-  // Fixed placeholder image URL
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) {
-      return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9Ijc1IiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNmM3NTgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zNWVtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=";
-    }
-    return imagePath;
-  };
-
-  if (fetchLoading) {
+  if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
-        <div className="spinner-border text-success" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="container py-5">
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status" style={{width: '3rem', height: '3rem'}}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3">Loading salon details...</p>
         </div>
-        <span className="ms-2">Loading shop details...</span>
       </div>
     );
   }
 
   return (
-    <div className="container-fluid">
+    <div className="container py-4">
+      {/* Header */}
+      <div className="row mb-4">
+        <div className="col">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item"><a href="/shopowner/dashboard" className="text-decoration-none">Dashboard</a></li>
+              <li className="breadcrumb-item"><a href="/shopowner/shops" className="text-decoration-none">My Salons</a></li>
+              <li className="breadcrumb-item active">Edit Salon</li>
+            </ol>
+          </nav>
+          <h1 className="fw-bold">Edit Salon</h1>
+          <p className="text-muted">Update your salon information and services</p>
+        </div>
+      </div>
+
       <div className="row justify-content-center">
-        <div className="col-lg-8">
-          <div className="card shadow border-0">
-            <div className="card-header bg-primary text-white">
-              <h4 className="mb-0">
+        <div className="col-lg-10">
+          <div className="card shadow-sm">
+            <div className="card-header bg-success text-white">
+              <h5 className="mb-0">
                 <i className="bi bi-pencil-square me-2"></i>
-                Edit Shop
-              </h4>
+                Edit Salon Information
+              </h5>
             </div>
             <div className="card-body p-4">
               {error && (
-                <div className="alert alert-danger">
-                  <strong>Error:</strong> {error}
-                  <br />
-                  <small className="text-muted">
-                    Please check that all required fields are filled correctly and try again.
-                  </small>
+                <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                  <div>{error}</div>
                 </div>
               )}
-              
+
               <form onSubmit={handleSubmit}>
-                {/* Shop Basic Info */}
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label">Shop Name *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">Location *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Description</label>
-                  <textarea
-                    className="form-control"
-                    name="description"
-                    rows="3"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Describe your shop, services, and what makes it special..."
-                  />
-                </div>
-
-                {/* Current Image Preview */}
-                {formData.currentImage && (
-                  <div className="mb-3">
-                    <label className="form-label">Current Image</label>
-                    <div className="d-flex align-items-center gap-3">
-                      <img
-                        src={getImageUrl(formData.currentImage)}
-                        alt="Current shop"
-                        className="img-thumbnail"
-                        style={{ width: "150px", height: "150px", objectFit: "cover" }}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-outline-danger btn-sm"
-                        onClick={removeImage}
-                      >
-                        <i className="bi bi-trash me-1"></i>
-                        Remove Image
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* New Image Upload */}
+                {/* Basic Information */}
                 <div className="mb-4">
-                  <label className="form-label">
-                    {formData.currentImage ? "Upload New Image" : "Shop Image"}
-                  </label>
-                  <input
-                    type="file"
-                    className="form-control"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                  <div className="form-text">
-                    Upload a photo of your shop (optional). JPG, PNG, or WebP formats supported.
-                  </div>
+                  <h5 className="mb-3 text-primary">
+                    <i className="bi bi-info-circle me-2"></i>
+                    Basic Information
+                  </h5>
                   
-                  {formData.image && (
-                    <div className="mt-2">
-                      <small className="text-success">
-                        <i className="bi bi-check-circle me-1"></i>
-                        New image selected: {formData.image.name}
-                      </small>
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Salon Name *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Enter salon name"
+                      />
                     </div>
-                  )}
+                    
+                    <div className="col-md-6">
+                      <label className="form-label">Location *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Enter salon location"
+                      />
+                    </div>
+                    
+                    <div className="col-12">
+                      <label className="form-label">Description *</label>
+                      <textarea
+                        className="form-control"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows="4"
+                        placeholder="Describe your salon..."
+                        required
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Salon Image */}
+                <div className="mb-4">
+                  <h5 className="mb-3 text-primary">
+                    <i className="bi bi-image me-2"></i>
+                    Salon Image
+                  </h5>
+                  
+                  <div className="row align-items-center">
+                    <div className="col-md-6">
+                      <input
+                        type="file"
+                        className="form-control"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                      <div className="form-text">
+                        Upload a new image or keep the current one
+                      </div>
+                      {currentImage && !imagePreview && (
+                        <div className="mt-2">
+                          <small className="text-muted">Current image:</small>
+                          <div>
+                            <img 
+                              src={`https://hair-salon-app-1.onrender.com${currentImage}`} 
+                              alt="Current" 
+                              className="img-thumbnail mt-1"
+                              style={{maxHeight: '100px'}}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="col-md-6">
+                      {imagePreview && (
+                        <div className="text-center">
+                          <p className="text-success">
+                            <i className="bi bi-check-circle me-1"></i>
+                            New image selected
+                          </p>
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="img-fluid rounded shadow-sm"
+                            style={{maxHeight: '200px'}}
+                          />
+                          <div className="mt-2">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => {
+                                setImage(null);
+                                setImagePreview(currentImage ? `https://hair-salon-app-1.onrender.com${currentImage}` : null);
+                              }}
+                            >
+                              <i className="bi bi-arrow-counterclockwise me-1"></i>
+                              Use Current Image
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Services */}
                 <div className="mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-3">
-                    <label className="form-label fw-semibold">Services *</label>
+                    <h5 className="mb-0 text-primary">
+                      <i className="bi bi-list-check me-2"></i>
+                      Services & Pricing
+                    </h5>
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-success"
+                      className="btn btn-sm btn-outline-primary"
                       onClick={addService}
                     >
-                      <i className="bi bi-plus me-1"></i>Add Service
+                      <i className="bi bi-plus me-1"></i>
+                      Add Service
                     </button>
                   </div>
-
+                  
                   {formData.services.map((service, index) => (
-                    <div key={index} className="row mb-3 align-items-center border-bottom pb-3">
-                      <div className="col-md-6">
-                        <label className="form-label small">Service Name *</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="e.g., Haircut, Manicure, Facial"
-                          value={service.serviceName}
-                          onChange={(e) => handleServiceChange(index, "serviceName", e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="col-md-4">
-                        <label className="form-label small">Price (Ksh) *</label>
-                        <div className="input-group">
-                          <span className="input-group-text">Ksh</span>
-                          <input
-                            type="number"
-                            className="form-control"
-                            placeholder="0"
-                            value={service.price}
-                            onChange={(e) => handleServiceChange(index, "price", e.target.value)}
-                            min="0"
-                            step="50"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="col-md-2">
-                        <label className="form-label small d-block">&nbsp;</label>
+                    <div key={index} className="card mb-3 border-success">
+                      <div className="card-header bg-light d-flex justify-content-between align-items-center">
+                        <span className="fw-bold">Service #{index + 1}</span>
                         {formData.services.length > 1 && (
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-danger w-100"
+                            className="btn btn-sm btn-outline-danger"
                             onClick={() => removeService(index)}
-                            title="Remove service"
                           >
                             <i className="bi bi-trash"></i>
                           </button>
                         )}
                       </div>
+                      <div className="card-body">
+                        <div className="row g-3 align-items-center">
+                          <div className="col-md-6">
+                            <label className="form-label">Service Name *</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={service.serviceName}
+                              onChange={(e) => handleServiceChange(index, 'serviceName', e.target.value)}
+                              placeholder="e.g., Haircut, Coloring, Styling"
+                              required
+                            />
+                          </div>
+                          
+                          <div className="col-md-4">
+                            <label className="form-label">Price (KSh) *</label>
+                            <input
+                              type="number"
+                              className="form-control"
+                              value={service.price}
+                              onChange={(e) => handleServiceChange(index, 'price', e.target.value)}
+                              placeholder="e.g., 500"
+                              min="1"
+                              required
+                            />
+                          </div>
+                          
+                          <div className="col-md-2">
+                            <label className="form-label">Duration</label>
+                            <select className="form-select" defaultValue="60">
+                              <option value="30">30 mins</option>
+                              <option value="60">60 mins</option>
+                              <option value="90">90 mins</option>
+                              <option value="120">120 mins</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
-                  
-                  {formData.services.length === 0 && (
-                    <div className="alert alert-warning">
-                      <i className="bi bi-exclamation-triangle me-2"></i>
-                      Add at least one service to your shop.
-                    </div>
-                  )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-4">
-                  <Link
-                    to="/shopowner/shops"
-                    className="btn btn-secondary me-md-2"
+                {/* Submit Buttons */}
+                <div className="d-flex gap-3 justify-content-end border-top pt-4">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => navigate('/shopowner/shops')}
                   >
-                    <i className="bi bi-arrow-left me-1"></i>
-                    Back to My Shops
-                  </Link>
+                    <i className="bi bi-arrow-left me-2"></i>
+                    Cancel
+                  </button>
+                  
                   <button
                     type="submit"
-                    className="btn btn-primary"
-                    disabled={loading}
+                    className="btn btn-success"
+                    disabled={updating}
                   >
-                    {loading ? (
+                    {updating ? (
                       <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Updating...
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Updating Salon...
                       </>
                     ) : (
                       <>
                         <i className="bi bi-check-circle me-2"></i>
-                        Update Shop
+                        Update Salon
                       </>
                     )}
                   </button>
