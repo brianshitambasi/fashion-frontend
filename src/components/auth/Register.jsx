@@ -70,8 +70,8 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('https://hair-salon-app-1.onrender.com/user/register', formData);
-      
+// In Register.js, change the axios call to:
+const response = await axios.post('https://hair-salon-app-1.onrender.com/auth/register', formData);      
       setSuccess('✅ Registration successful! Redirecting to login...');
       
       // Redirect to login after 2 seconds

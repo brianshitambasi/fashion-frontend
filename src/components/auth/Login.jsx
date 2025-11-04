@@ -55,8 +55,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('https://hair-salon-app-1.onrender.com/user/login', formData);
-      
+// In Login.js, change the axios call to:
+const response = await axios.post('https://hair-salon-app-1.onrender.com/auth/login', formData);      
       if (response.data.token && response.data.user) {
         // Store token and user data
         login(response.data.user, response.data.token);
