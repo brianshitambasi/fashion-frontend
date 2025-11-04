@@ -1,14 +1,14 @@
 import React from "react";
 import AdminLayout from "./AdminLayout";
 
-const AdminBookings = () => {
+const AdminProducts = () => {
   return (
     <AdminLayout>
       <div className="container-fluid">
-        <h3 className="mb-4">📅 Manage Bookings</h3>
+        <h3 className="mb-4">💇 Manage Hairstyles / Products</h3>
         <div className="card shadow-sm">
           <div className="card-body">
-            <p>Track and manage all salon appointments and transactions.</p>
+            <p>Here admins can review, approve, or delete salon hairstyle listings.</p>
           </div>
         </div>
       </div>
@@ -16,4 +16,4 @@ const AdminBookings = () => {
   );
 };
 
-export default AdminBookings;
+export default AdminProducts;

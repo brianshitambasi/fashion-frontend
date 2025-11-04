@@ -244,6 +244,7 @@ const Register = () => {
                       >
                         <option value="customer">👤 Customer</option>
                         <option value="shopowner">🏪 Shop Owner</option>
+                         <option value="admin">🛠️ Admin</option>
                       </select>
                     </div>
                     <div className="form-text">

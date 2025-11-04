@@ -1,107 +1,105 @@
-// components/layout/Footer.js
+// components/layout/Footer.js (Compact Version)
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-dark text-white mt-5">
-      <div className="container py-5">
-        <div className="row">
-          <div className="col-md-4 mb-4 mb-md-0">
-            <h5>💇‍♀️ Looks Nairobi</h5>
-            <p className="text-muted">
-              Your premier destination for hair salon bookings in Nairobi. 
-              Find the best stylists and book appointments with ease.
+    <footer className="bg-dark text-white pt-4">
+      <div className="container">
+        <div className="row g-4">
+          {/* Brand & Social */}
+          <div className="col-lg-4 col-md-6">
+            <h5 className="text-primary mb-3">
+              <i className="bi bi-scissors me-2"></i>
+              Looks Nairobi
+            </h5>
+            <p className="text-light small mb-3">
+              Your premier hair salon booking platform in Nairobi.
             </p>
-          </div>
-          <div className="col-md-2 mb-4 mb-md-0">
-            <h6>Quick Links</h6>
-            <ul className="list-unstyled">
-              <li><a href="/" className="text-muted text-decoration-none">Home</a></li>
-              <li><a href="/shops" className="text-muted text-decoration-none">Salons</a></li>
-              <li><a href="/about" className="text-muted text-decoration-none">About</a></li>
-            </ul>
-          </div>
-          <div className="col-md-2 mb-4 mb-md-0">
-            <h6>Support</h6>
-            <ul className="list-unstyled">
-              <li><a href="/contact" className="text-muted text-decoration-none">Contact</a></li>
-              <li><a href="/help" className="text-muted text-decoration-none">Help Center</a></li>
-              <li><a href="/privacy" className="text-muted text-decoration-none">Privacy</a></li>
-            </ul>
-          </div>
-          <div className="col-md-4">
-            <h6>Connect With Us</h6>
-            <div className="social-links mt-3">
-              {/* Social links with proper accessibility and responsive design */}
-              <div className="d-flex flex-wrap gap-3">
-                <a 
-                  href="#" 
-                  className="text-muted text-decoration-none d-flex align-items-center gap-1 social-link"
-                  aria-label="Follow us on Facebook"
-                >
-                  <span className="social-icon">📘</span>
-                  <span className="social-text d-none d-sm-inline">Facebook</span>
-                </a>
-                <a 
-                  href="#" 
-                  className="text-muted text-decoration-none d-flex align-items-center gap-1 social-link"
-                  aria-label="Follow us on Instagram"
-                >
-                  <span className="social-icon">📷</span>
-                  <span className="social-text d-none d-sm-inline">Instagram</span>
-                </a>
-                <a 
-                  href="#" 
-                  className="text-muted text-decoration-none d-flex align-items-center gap-1 social-link"
-                  aria-label="Follow us on Twitter"
-                >
-                  <span className="social-icon">🐦</span>
-                  <span className="social-text d-none d-sm-inline">Twitter</span>
-                </a>
-              </div>
-              
-              {/* Alternative: Icon-only version for extra small screens */}
-              <div className="d-flex d-sm-none justify-content-center gap-4 mt-2">
-                <a href="#" className="text-muted fs-5" aria-label="Facebook">
-                  📘
-                </a>
-                <a href="#" className="text-muted fs-5" aria-label="Instagram">
-                  📷
-                </a>
-                <a href="#" className="text-muted fs-5" aria-label="Twitter">
-                  🐦
-                </a>
-              </div>
+            <div className="social-icons">
+              <a 
+                href="https://facebook.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-outline-light btn-sm rounded-circle me-2"
+                title="Facebook"
+              >
+                <i className="bi bi-facebook"></i>
+              </a>
+              <a 
+                href="https://instagram.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-outline-light btn-sm rounded-circle me-2"
+                title="Instagram"
+              >
+                <i className="bi bi-instagram"></i>
+              </a>
+              <a 
+                href="https://twitter.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-outline-light btn-sm rounded-circle"
+                title="Twitter"
+              >
+                <i className="bi bi-twitter-x"></i>
+              </a>
             </div>
-            
-            {/* Optional: Newsletter signup for larger screens */}
-            <div className="mt-4 d-none d-md-block">
-              <p className="text-muted small mb-2">Stay updated with our latest offers</p>
-              <div className="input-group input-group-sm">
-                <input 
-                  type="email" 
-                  className="form-control" 
-                  placeholder="Your email" 
-                  aria-label="Email for newsletter"
-                />
-                <button className="btn btn-outline-light btn-sm" type="button">
-                  Subscribe
-                </button>
-              </div>
+          </div>
+
+          {/* Quick Links */}
+          <div className="col-lg-2 col-md-3 col-6">
+            <h6 className="text-primary mb-3">Explore</h6>
+            <ul className="list-unstyled small">
+              <li className="mb-2"><Link to="/" className="text-light text-decoration-none">Home</Link></li>
+              <li className="mb-2"><Link to="/shops" className="text-light text-decoration-none">Salons</Link></li>
+              <li className="mb-2"><Link to="/hairstyles" className="text-light text-decoration-none">Styles</Link></li>
+              <li><Link to="/about" className="text-light text-decoration-none">About</Link></li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div className="col-lg-2 col-md-3 col-6">
+            <h6 className="text-primary mb-3">Support</h6>
+            <ul className="list-unstyled small">
+              <li className="mb-2"><Link to="/contact" className="text-light text-decoration-none">Contact</Link></li>
+              <li className="mb-2"><Link to="/help" className="text-light text-decoration-none">Help</Link></li>
+              <li className="mb-2"><Link to="/privacy" className="text-light text-decoration-none">Privacy</Link></li>
+              <li><Link to="/terms" className="text-light text-decoration-none">Terms</Link></li>
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div className="col-lg-4">
+            <h6 className="text-primary mb-3">Newsletter</h6>
+            <div className="input-group input-group-sm">
+              <input 
+                type="email" 
+                className="form-control" 
+                placeholder="Your email" 
+              />
+              <button className="btn btn-primary" type="button">
+                <i className="bi bi-arrow-right"></i>
+              </button>
             </div>
           </div>
         </div>
-        <hr className="my-4" />
-        <div className="row">
-          <div className="col-md-6">
-            <p className="text-muted mb-0">
-              © {new Date().getFullYear()} Looks Nairobi. All rights reserved.
-            </p>
+
+        <hr className="my-3 border-light" />
+
+        {/* Bottom */}
+        <div className="row align-items-center">
+          <div className="col-md-6 text-center text-md-start mb-2 mb-md-0">
+            <small className="text-muted">
+              © {currentYear} Looks Nairobi. All rights reserved.
+            </small>
           </div>
-          <div className="col-md-6 text-md-end">
-            <p className="text-muted mb-0">
-              Made with ❤️ for Nairobi
-            </p>
+          <div className="col-md-6 text-center text-md-end">
+            <small className="text-muted">
+              Made with <i className="bi bi-heart-fill text-danger"></i> in Nairobi
+            </small>
           </div>
         </div>
       </div>

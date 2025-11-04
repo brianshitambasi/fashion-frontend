@@ -1,49 +1,55 @@
 // App.js
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './context/ProtectedRoute';
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./context/ProtectedRoute";
+import Navbar from "./components/layout/Navbar";
+import Footer from "./components/layout/Footer";
 
 // Public Components
-import Home from './components/public/Home';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import ShopList from './components/public/ShopList';
-import ShopDetails from './components/public/ShopDetails';
-import Hairstyles from './components/public/Hairstyles';
-import About from './components/public/About';
-import Contact from './components/public/Contact';
-import NotAuthorized from './components/public/NotAuthorized';
-import PageNotFound from './components/public/PageNotFound';
+import Home from "./components/public/Home";
+import Login from "./components/auth/Login";
+import Register from "./components/auth/Register";
+import ShopList from "./components/public/ShopList";
+import ShopDetails from "./components/public/ShopDetails";
+import Hairstyles from "./components/public/Hairstyles";
+import About from "./components/public/About";
+import Contact from "./components/public/Contact";
+import NotAuthorized from "./components/public/NotAuthorized";
+import PageNotFound from "./components/public/PageNotFound";
 
 // Customer Components
-import CustomerDashboard from './components/customer/CustomerDashboard';
-import CustomerBookings from './components/customer/CustomerBookings';
-import CustomerCart from './components/customer/CustomerCart';
-import CustomerProfile from './components/customer/CustomerProfile';
+import CustomerDashboard from "./components/customer/CustomerDashboard";
+import CustomerBookings from "./components/customer/CustomerBookings";
+import CustomerCart from "./components/customer/CustomerCart";
+import CustomerProfile from "./components/customer/CustomerProfile";
 
 // Shop Owner Components
-import ShopOwnerDashboard from './components/shopowner/ShopOwnerDashboard ';
-import ShopOwnerShops from './components/shopowner/ShopOwnerShops ';
-import CreateShop from './components/shopowner/CreateShop';
-import EditShop from './components/shopowner/EditShop';
-import ShopOwnerBookings from './components/shopowner/ShopOwnerBookings';
-import ShopOwnerHairstyles from './components/shopowner/ShopOwnerHairstyles';
-import ShopOwnerProfile from './components/shopowner/Profile';
-import ShopOwnerSettings from './components/shopowner/Settings';
+import ShopOwnerDashboard from "./components/shopowner/ShopOwnerDashboard ";
+import ShopOwnerShops from "./components/shopowner/ShopOwnerShops ";
+import CreateShop from "./components/shopowner/CreateShop";
+import EditShop from "./components/shopowner/EditShop";
+import ShopOwnerBookings from "./components/shopowner/ShopOwnerBookings";
+import ShopOwnerHairstyles from "./components/shopowner/ShopOwnerHairstyles";
+import ShopOwnerProfile from "./components/shopowner/Profile";
+import ShopOwnerSettings from "./components/shopowner/Settings";
+import ProductList from "./components/shopowner/ProductList";
+import CreateProduct from "./components/shopowner/CreateProduct";
+import EditProduct from "./components/shopowner/EditProduct";
 
 // Admin Components
-import AdminDashboard from './components/admin/AdminDashboard';
-import AdminUsers from './components/admin/AdminUsers';
-import AdminShops from './components/admin/AdminShops';
-import AdminBookings from './components/admin/AdminBookings';
+import Dashboard from "./components/admin/Dashboard";
+import AdminUsers from "./components/admin/AdminUsers";
+import AdminSalons from "./components/admin/AdminSalons";
+import AdminProducts from "./components/admin/AdminProducts";
+import AdminBookings from "./components/admin/AdminBookings";
+import AdminReports from "./components/admin/AdminReports";
+import AdminSettings from "./components/admin/AdminSettings";
 
 // CSS
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
-import './App.css';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import "./App.css";
 
 function App() {
   return (
@@ -148,6 +154,30 @@ function App() {
                 }
               />
               <Route
+                path="/shopowner/products"
+                element={
+                  <ProtectedRoute allowedRoles={["shopowner"]}>
+                    <ProductList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/shopowner/products/create"
+                element={
+                  <ProtectedRoute allowedRoles={["shopowner"]}>
+                    <CreateProduct />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/shopowner/products/edit/:id"
+                element={
+                  <ProtectedRoute allowedRoles={["shopowner"]}>
+                    <EditProduct />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/shopowner/profile"
                 element={
                   <ProtectedRoute allowedRoles={["shopowner"]}>
@@ -164,12 +194,12 @@ function App() {
                 }
               />
 
-              {/* Admin Routes */}
+              {/* ✅ Admin Routes */}
               <Route
                 path="/admin/dashboard"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminDashboard />
+                    <Dashboard />
                   </ProtectedRoute>
                 }
               />
@@ -182,10 +212,18 @@ function App() {
                 }
               />
               <Route
-                path="/admin/shops"
+                path="/admin/salons"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminShops />
+                    <AdminSalons />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/products"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminProducts />
                   </ProtectedRoute>
                 }
               />
@@ -197,16 +235,22 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-
               <Route
-  path="/shopowner/settings"
-  element={
-    <ProtectedRoute allowedRoles={["shopowner"]}>
-      <ShopOwnerSettings />
-    </ProtectedRoute>
-  }
-/>
-
+                path="/admin/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminReports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/settings"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminSettings />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* 404 Page */}
               <Route path="*" element={<PageNotFound />} />
