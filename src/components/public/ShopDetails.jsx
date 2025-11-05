@@ -17,7 +17,12 @@ const ShopDetails = () => {
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('');
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
   const [activeTab, setActiveTab] = useState('services');
 
   useEffect(() => {
@@ -26,17 +31,23 @@ const ShopDetails = () => {
 
   const fetchShopDetails = async () => {
     try {
+      setLoading(true);
       const [shopRes, reviewsRes, hairstylesRes] = await Promise.all([
-        axios.get(`https://hair-salon-app-1.onrender.com/shop/${id}`),
-        axios.get(`https://hair-salon-app-1.onrender.com/review/shop/${id}`),
-        axios.get(`https://hair-salon-app-1.onrender.com/hairstyle/shop/${id}`)
+        axios.get(`https://hair-salon-app-1.onrender.com/shops/${id}`),
+        axios.get(`https://hair-salon-app-1.onrender.com/reviews/shop/${id}`).catch(err => ({ data: [] })),
+        axios.get(`https://hair-salon-app-1.onrender.com/hairstyles/shop/${id}`).catch(err => ({ data: [] }))
       ]);
 
       setShop(shopRes.data);
-      setReviews(reviewsRes.data);
-      setHairstyles(hairstylesRes.data);
+      setReviews(reviewsRes.data || []);
+      setHairstyles(hairstylesRes.data || []);
     } catch (error) {
       console.error('Error fetching shop details:', error);
+      if (error.response?.status === 404) {
+        setShop(null);
+      } else {
+        alert('Failed to load shop details. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -101,7 +112,7 @@ const ShopDetails = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.post('https://hair-salon-app-1.onrender.com/booking', {
+      const response = await axios.post('https://hair-salon-app-1.onrender.com/bookings', {
         shop: id,
         service: {
           serviceName: selectedService.serviceName,
@@ -113,12 +124,75 @@ const ShopDetails = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      const booking = response.data.booking;
       alert('Booking created successfully! You can now make payment.');
       setShowBookingModal(false);
-      navigate('/customer/bookings');
+      
+      // Automatically initiate M-Pesa payment
+      await handleMpesaPayment(booking._id, selectedService.price);
+      
     } catch (error) {
       console.error('Error creating booking:', error);
       alert('Failed to create booking. Please try again.');
+    }
+  };
+
+  const handleMpesaPayment = async (bookingId, amount) => {
+    setProcessingPayment(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('https://hair-salon-app-1.onrender.com/payments', {
+        booking: bookingId,
+        amount: amount,
+        method: 'mpesa',
+        transactionRef: `MPESA-${Date.now()}`
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      alert('M-Pesa payment initiated! Please check your phone to complete the transaction.');
+      
+      // Redirect to bookings page
+      navigate('/customer/bookings');
+      
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      alert('Payment initiation failed. You can pay later from your bookings page.');
+      navigate('/customer/bookings');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    
+    if (!isAuthenticated || user?.role !== 'customer') {
+      alert('Only customers can submit reviews');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('https://hair-salon-app-1.onrender.com/reviews', {
+        shop: id,
+        rating: reviewRating,
+        comment: reviewComment
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      alert('Review submitted successfully!');
+      setShowReviewModal(false);
+      setReviewRating(5);
+      setReviewComment('');
+      fetchShopDetails(); // Refresh reviews
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Failed to submit review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -359,7 +433,7 @@ const ShopDetails = () => {
                                       ) : (
                                         <i className="bi bi-cart-plus me-1"></i>
                                       )}
-                                      Add to Cart
+                                      {addingToCart ? 'Adding...' : 'Add to Cart'}
                                     </button>
                                   </div>
                                 </td>
@@ -443,7 +517,7 @@ const ShopDetails = () => {
                                   <div 
                                     className="progress-bar bg-warning" 
                                     style={{
-                                      width: `${(ratingDistribution[rating] / reviews.length) * 100}%`
+                                      width: `${reviews.length > 0 ? (ratingDistribution[rating] / reviews.length) * 100 : 0}%`
                                     }}
                                   ></div>
                                 </div>
@@ -460,7 +534,10 @@ const ShopDetails = () => {
                     {isAuthenticated && user?.role === 'customer' && (
                       <div className="card mt-4">
                         <div className="card-body text-center">
-                          <button className="btn btn-primary w-100">
+                          <button 
+                            className="btn btn-primary w-100"
+                            onClick={() => setShowReviewModal(true)}
+                          >
                             <i className="bi bi-pencil me-2"></i>
                             Write a Review
                           </button>
@@ -500,7 +577,10 @@ const ShopDetails = () => {
                             <h5 className="text-muted mt-3">No reviews yet</h5>
                             <p className="text-muted">Be the first to review this salon!</p>
                             {isAuthenticated && user?.role === 'customer' && (
-                              <button className="btn btn-primary">
+                              <button 
+                                className="btn btn-primary"
+                                onClick={() => setShowReviewModal(true)}
+                              >
                                 Write First Review
                               </button>
                             )}
@@ -617,7 +697,7 @@ const ShopDetails = () => {
       {/* Booking Modal */}
       {showBookingModal && (
         <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Book Appointment</h5>
@@ -629,48 +709,90 @@ const ShopDetails = () => {
               </div>
               <form onSubmit={handleBookingSubmit}>
                 <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Service</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      value={selectedService?.serviceName} 
-                      readOnly 
-                    />
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="mb-3">
+                        <label className="form-label">Service</label>
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          value={selectedService?.serviceName} 
+                          readOnly 
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Price</label>
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          value={`KSh ${selectedService?.price}`} 
+                          readOnly 
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="mb-3">
+                        <label className="form-label">Date</label>
+                        <input 
+                          type="date" 
+                          className="form-control" 
+                          value={bookingDate}
+                          onChange={(e) => setBookingDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          required 
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Time</label>
+                        <input 
+                          type="time" 
+                          className="form-control" 
+                          value={bookingTime}
+                          onChange={(e) => setBookingTime(e.target.value)}
+                          required 
+                        />
+                      </div>
+                    </div>
                   </div>
+                  
+                  {/* Payment Method Selection */}
                   <div className="mb-3">
-                    <label className="form-label">Price</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      value={`KSh ${selectedService?.price}`} 
-                      readOnly 
-                    />
+                    <label className="form-label">Payment Method</label>
+                    <div className="form-check mb-2">
+                      <input 
+                        className="form-check-input" 
+                        type="radio" 
+                        name="paymentMethod" 
+                        id="mpesa" 
+                        value="mpesa" 
+                        defaultChecked 
+                      />
+                      <label className="form-check-label" htmlFor="mpesa">
+                        <i className="bi bi-phone text-success me-2"></i>
+                        M-Pesa Mobile Money
+                      </label>
+                    </div>
+                    <div className="form-check">
+                      <input 
+                        className="form-check-input" 
+                        type="radio" 
+                        name="paymentMethod" 
+                        id="cash" 
+                        value="cash" 
+                      />
+                      <label className="form-check-label" htmlFor="cash">
+                        <i className="bi bi-cash text-success me-2"></i>
+                        Pay at Salon
+                      </label>
+                    </div>
                   </div>
-                  <div className="mb-3">
-                    <label className="form-label">Date</label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
-                      value={bookingDate}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      required 
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Time</label>
-                    <input 
-                      type="time" 
-                      className="form-control" 
-                      value={bookingTime}
-                      onChange={(e) => setBookingTime(e.target.value)}
-                      required 
-                    />
-                  </div>
+                  
                   <div className="alert alert-info">
                     <i className="bi bi-info-circle me-2"></i>
-                    You'll be able to make payment after booking confirmation.
+                    {document.querySelector('input[name="paymentMethod"]:checked')?.value === 'mpesa' 
+                      ? 'You will receive an M-Pesa prompt on your phone after booking confirmation.'
+                      : 'You can pay for your service when you visit the salon.'
+                    }
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -681,8 +803,113 @@ const ShopDetails = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary">
-                    Confirm Booking
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-calendar-check me-2"></i>
+                        Confirm Booking
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Write a Review</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowReviewModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleSubmitReview}>
+                <div className="modal-body">
+                  <div className="mb-4 text-center">
+                    <label className="form-label d-block mb-3">How would you rate your experience?</label>
+                    <div className="rating-stars">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          className={`btn btn-link p-0 me-2 ${star <= reviewRating ? 'text-warning' : 'text-muted'}`}
+                          onClick={() => setReviewRating(star)}
+                          style={{ fontSize: '2rem', border: 'none', background: 'none' }}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                    <small className="text-muted">
+                      {reviewRating === 5 && 'Excellent'}
+                      {reviewRating === 4 && 'Very Good'}
+                      {reviewRating === 3 && 'Good'}
+                      {reviewRating === 2 && 'Fair'}
+                      {reviewRating === 1 && 'Poor'}
+                    </small>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="form-label">Your Review</label>
+                    <textarea
+                      className="form-control"
+                      rows="4"
+                      placeholder="Share your experience with this salon..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      required
+                    ></textarea>
+                    <div className="form-text">
+                      Your review will help other customers make better decisions.
+                    </div>
+                  </div>
+                  
+                  <div className="alert alert-info">
+                    <i className="bi bi-info-circle me-2"></i>
+                    Your review will be publicly visible on the salon's profile.
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setShowReviewModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={submittingReview}
+                  >
+                    {submittingReview ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-send me-2"></i>
+                        Submit Review
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

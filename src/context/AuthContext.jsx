@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
 // Create the context
@@ -15,10 +14,8 @@ export const useAuth = () => {
   return context;
 };
 
-// Provider component
+// Provider component - REMOVED useNavigate from here
 export const AuthProvider = ({ children }) => {
-  const navigate = useNavigate();
-
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
@@ -59,11 +56,19 @@ export const AuthProvider = ({ children }) => {
             return;
           }
 
-          // Optionally verify token with backend
-          await axios.get("https://hair-salon-app-1.onrender.com/user/verify", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          // Try different endpoints if /user/verify doesn't work
+          try {
+            await axios.get("https://hair-salon-app-1.onrender.com/user/verify", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          } catch (verifyError) {
+            // If /user/verify fails, try /auth/me
+            await axios.get("https://hair-salon-app-1.onrender.com/auth/me", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          }
         } catch (error) {
+          console.log("Auth verification failed, logging out");
           logout();
         }
       }
@@ -71,7 +76,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []); // runs once on mount
+  }, []);
 
   // Login
   const login = (userData, authToken) => {
@@ -81,13 +86,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", authToken);
   };
 
-  // Logout
+  // Logout - REMOVED navigate from here
   const logout = useCallback(() => {
     localStorage.clear();
     setUser(null);
     setToken("");
-    navigate("/login");
-  }, [navigate]);
+    // Navigate will be handled in components that use logout
+  }, []);
 
   // Update user info
   const updateUser = (userData) => {
@@ -107,7 +112,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

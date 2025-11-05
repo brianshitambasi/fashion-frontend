@@ -1,28 +1,27 @@
-// components/customer/Bookings.js
+// components/customer/CustomerBookings.js
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 
 const CustomerBookings = () => {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
-  const [filteredBookings, setFilteredBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
-  useEffect(() => {
-    filterBookings();
-  }, [bookings, selectedStatus]);
-
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://hair-salon-app-1.onrender.com/booking', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(
+        'https://hair-salon-app-1.onrender.com/bookings',
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
       setBookings(response.data);
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -31,56 +30,48 @@ const CustomerBookings = () => {
     }
   };
 
-  const filterBookings = () => {
-    if (selectedStatus === 'all') {
-      setFilteredBookings(bookings);
-    } else {
-      setFilteredBookings(bookings.filter(booking => booking.status === selectedStatus));
-    }
-  };
-
-  const cancelBooking = async (bookingId) => {
-    if (!window.confirm('Are you sure you want to cancel this booking?')) {
-      return;
-    }
-
+  const handleMpesaPayment = async (bookingId, amount) => {
+    setProcessingPayment(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`https://hair-salon-app-1.onrender.com/booking/${bookingId}`, {
-        status: 'cancelled'
+      const response = await axios.post('https://hair-salon-app-1.onrender.com/payments', {
+        booking: bookingId,
+        amount: amount,
+        method: 'mpesa',
+        transactionRef: `MPESA-${Date.now()}`
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Refresh bookings
-      fetchBookings();
-      alert('Booking cancelled successfully');
+      alert('M-Pesa payment initiated! Please check your phone to complete the transaction.');
+      fetchBookings(); // Refresh bookings
     } catch (error) {
-      console.error('Error cancelling booking:', error);
-      alert('Failed to cancel booking. Please try again.');
+      console.error('Error processing payment:', error);
+      alert('Failed to initiate payment. Please try again.');
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { class: 'bg-warning text-dark', label: 'Pending' },
-      confirmed: { class: 'bg-success', label: 'Confirmed' },
-      completed: { class: 'bg-info', label: 'Completed' },
-      cancelled: { class: 'bg-danger', label: 'Cancelled' }
+      pending: { class: 'bg-warning', text: 'Pending' },
+      confirmed: { class: 'bg-primary', text: 'Confirmed' },
+      completed: { class: 'bg-success', text: 'Completed' },
+      cancelled: { class: 'bg-danger', text: 'Cancelled' }
     };
     
-    const config = statusConfig[status] || { class: 'bg-secondary', label: status };
-    return <span className={`badge ${config.class}`}>{config.label}</span>;
+    const config = statusConfig[status] || statusConfig.pending;
+    return <span className={`badge ${config.class}`}>{config.text}</span>;
   };
 
   if (loading) {
     return (
-      <div className="container py-5">
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status" style={{width: '3rem', height: '3rem'}}>
+      <div className="container py-4">
+        <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+          <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p className="mt-3">Loading your bookings...</p>
         </div>
       </div>
     );
@@ -88,169 +79,106 @@ const CustomerBookings = () => {
 
   return (
     <div className="container py-4">
-      {/* Header */}
       <div className="row mb-4">
         <div className="col">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item"><Link to="/" className="text-decoration-none">Home</Link></li>
-              <li className="breadcrumb-item"><Link to="/customer/dashboard" className="text-decoration-none">Dashboard</Link></li>
-              <li className="breadcrumb-item active">My Bookings</li>
-            </ol>
-          </nav>
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h1 className="fw-bold">My Bookings</h1>
-              <p className="text-muted">Manage your hair salon appointments and payments</p>
-            </div>
-            <Link to="/shops" className="btn btn-primary">
-              <i className="bi bi-plus-circle me-2"></i>
-              New Booking
-            </Link>
-          </div>
+          <h1 className="fw-bold">My Bookings</h1>
+          <p className="text-muted">Manage your salon appointments and payments</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="row mb-4">
-        <div className="col">
-          <div className="card">
-            <div className="card-body">
-              <div className="row align-items-center">
-                <div className="col-md-6">
-                  <h6 className="mb-0">Filter by Status:</h6>
-                </div>
-                <div className="col-md-6">
-                  <select
-                    className="form-select"
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                  >
-                    <option value="all">All Bookings</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
+      {bookings.length === 0 ? (
+        <div className="card">
+          <div className="card-body text-center py-5">
+            <i className="bi bi-calendar-x display-1 text-muted"></i>
+            <h3 className="text-muted mt-3">No Bookings Yet</h3>
+            <p className="text-muted">You haven't made any bookings yet.</p>
+            <a href="/shops" className="btn btn-primary">
+              Browse Salons
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="row">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-header bg-white">
+                <h5 className="mb-0">Booking History</h5>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bookings List */}
-      <div className="row">
-        <div className="col">
-          <div className="card">
-            <div className="card-body">
-              {filteredBookings.length > 0 ? (
+              <div className="card-body p-0">
                 <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
+                  <table className="table table-hover mb-0">
+                    <thead className="bg-light">
                       <tr>
-                        <th>Salon</th>
                         <th>Service</th>
+                        <th>Salon</th>
                         <th>Date & Time</th>
-                        <th>Status</th>
                         <th>Amount</th>
+                        <th>Status</th>
                         <th>Payment</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredBookings.map(booking => (
+                      {bookings.map(booking => (
                         <tr key={booking._id}>
+                          <td>
+                            <strong>{booking.service?.serviceName}</strong>
+                          </td>
                           <td>
                             <div>
                               <strong>{booking.shop?.name}</strong>
                               <br />
-                              <small className="text-muted">
-                                <i className="bi bi-geo-alt me-1"></i>
-                                {booking.shop?.location}
-                              </small>
+                              <small className="text-muted">{booking.shop?.location}</small>
                             </div>
                           </td>
                           <td>
-                            <strong>{booking.service?.serviceName}</strong>
+                            {new Date(booking.dateTime).toLocaleDateString()}
                             <br />
-                            <small className="text-muted">60 mins</small>
-                          </td>
-                          <td>
-                            <div>
-                              {new Date(booking.dateTime).toLocaleDateString()}
-                              <br />
-                              <small className="text-muted">
-                                {new Date(booking.dateTime).toLocaleTimeString()}
-                              </small>
-                            </div>
-                          </td>
-                          <td>
-                            {getStatusBadge(booking.status)}
+                            <small className="text-muted">
+                              {new Date(booking.dateTime).toLocaleTimeString()}
+                            </small>
                           </td>
                           <td className="fw-bold text-primary">
                             KSh {booking.service?.price}
                           </td>
                           <td>
+                            {getStatusBadge(booking.status)}
+                          </td>
+                          <td>
                             {booking.payment ? (
-                              <span className="badge bg-success">Paid</span>
+                              <span className={`badge ${
+                                booking.payment.status === 'success' ? 'bg-success' :
+                                booking.payment.status === 'pending' ? 'bg-warning' : 'bg-danger'
+                              }`}>
+                                {booking.payment.status}
+                              </span>
                             ) : (
-                              <span className="badge bg-warning text-dark">Pending</span>
+                              <span className="badge bg-secondary">Not Paid</span>
                             )}
                           </td>
                           <td>
-                            <div className="dropdown">
-                              <button 
-                                className="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                type="button" 
-                                data-bs-toggle="dropdown"
-                              >
-                                <i className="bi bi-three-dots"></i>
-                              </button>
-                              <ul className="dropdown-menu">
-                                <li>
-                                  <button className="dropdown-item">
-                                    <i className="bi bi-eye me-2"></i>
-                                    View Details
-                                  </button>
-                                </li>
-                                {!booking.payment && booking.status === 'pending' && (
-                                  <li>
-                                    <Link 
-                                      to={`/customer/payment/${booking._id}`}
-                                      className="dropdown-item text-success"
-                                    >
-                                      <i className="bi bi-credit-card me-2"></i>
-                                      Make Payment
-                                    </Link>
-                                  </li>
-                                )}
-                                {booking.status === 'pending' && (
-                                  <li>
-                                    <button 
-                                      className="dropdown-item text-danger" 
-                                      onClick={() => cancelBooking(booking._id)}
-                                    >
-                                      <i className="bi bi-x-circle me-2"></i>
-                                      Cancel Booking
-                                    </button>
-                                  </li>
-                                )}
-                                {booking.status === 'completed' && !booking.review && (
-                                  <li>
-                                    <button className="dropdown-item text-info">
-                                      <i className="bi bi-star me-2"></i>
-                                      Write Review
-                                    </button>
-                                  </li>
-                                )}
-                                <li>
-                                  <button className="dropdown-item">
-                                    <i className="bi bi-chat me-2"></i>
-                                    Contact Salon
-                                  </button>
-                                </li>
-                              </ul>
+                            <div className="btn-group" role="group">
+                              {!booking.payment && booking.status !== 'cancelled' && (
+                                <button
+                                  className="btn btn-sm btn-success"
+                                  onClick={() => handleMpesaPayment(booking._id, booking.service.price)}
+                                  disabled={processingPayment}
+                                >
+                                  {processingPayment ? (
+                                    <span className="spinner-border spinner-border-sm"></span>
+                                  ) : (
+                                    <>
+                                      <i className="bi bi-phone me-1"></i>
+                                      Pay
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                              {booking.status === 'pending' && (
+                                <button className="btn btn-sm btn-outline-danger">
+                                  Cancel
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -258,67 +186,11 @@ const CustomerBookings = () => {
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <div className="text-center py-5">
-                  <i className="bi bi-calendar-x display-1 text-muted"></i>
-                  <h4 className="text-muted mt-3">No bookings found</h4>
-                  <p className="text-muted">
-                    {selectedStatus === 'all' 
-                      ? "You haven't made any bookings yet."
-                      : `No ${selectedStatus} bookings found.`
-                    }
-                  </p>
-                  <Link to="/shops" className="btn btn-primary">
-                    <i className="bi bi-search me-2"></i>
-                    Browse Salons
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Summary */}
-      <div className="row mt-4">
-        <div className="col">
-          <div className="card">
-            <div className="card-body">
-              <h6 className="card-title">Booking Summary</h6>
-              <div className="row text-center">
-                <div className="col">
-                  <div className="border-end">
-                    <h4 className="text-primary">{bookings.length}</h4>
-                    <small className="text-muted">Total Bookings</small>
-                  </div>
-                </div>
-                <div className="col">
-                  <div className="border-end">
-                    <h4 className="text-warning">{bookings.filter(b => b.status === 'pending').length}</h4>
-                    <small className="text-muted">Pending</small>
-                  </div>
-                </div>
-                <div className="col">
-                  <div className="border-end">
-                    <h4 className="text-success">{bookings.filter(b => b.status === 'confirmed').length}</h4>
-                    <small className="text-muted">Confirmed</small>
-                  </div>
-                </div>
-                <div className="col">
-                  <div className="border-end">
-                    <h4 className="text-info">{bookings.filter(b => b.status === 'completed').length}</h4>
-                    <small className="text-muted">Completed</small>
-                  </div>
-                </div>
-                <div className="col">
-                  <h4 className="text-danger">{bookings.filter(b => b.status === 'cancelled').length}</h4>
-                  <small className="text-muted">Cancelled</small>
-                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

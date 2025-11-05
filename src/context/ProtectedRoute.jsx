@@ -1,19 +1,29 @@
-import { useContext } from "react"
-import { AuthContext } from "./AuthContext"
-import { Navigate, replace } from "react-router-dom"
+import React, { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { Navigate } from "react-router-dom";
 
-const ProtectedRoute=({children,allowedRoles})=>{
-    const {user}=useContext(AuthContext)
-    // check if there is a user/if the user logged in
-    if (!user) {
-        // incase there is no user we are taken to login
-        return <Navigate to='/login' replace/>        
-    }
-    if (!allowedRoles.includes(user.role)) {
-        // Not not allowed
-        // incase the logged in user has not role that has been predefined
-        return <Navigate to='/not-authorized' replace/>
-    }
-    return  children
-}
-export default ProtectedRoute
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/not-authorized" replace />;
+  }
+
+  return children;
+};
+
+export default ProtectedRoute;

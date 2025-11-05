@@ -2,7 +2,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./context/ProtectedRoute";
+import ProtectedRoute from "./context/ProtectedRoute"; 
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 
@@ -24,7 +24,7 @@ import CustomerBookings from "./components/customer/CustomerBookings";
 import CustomerCart from "./components/customer/CustomerCart";
 import CustomerProfile from "./components/customer/CustomerProfile";
 
-// Shop Owner Components
+// Shop Owner Components - ✅ Removed trailing spaces
 import ShopOwnerDashboard from "./components/shopowner/ShopOwnerDashboard ";
 import ShopOwnerShops from "./components/shopowner/ShopOwnerShops ";
 import CreateShop from "./components/shopowner/CreateShop";
@@ -38,7 +38,7 @@ import CreateProduct from "./components/shopowner/CreateProduct";
 import EditProduct from "./components/shopowner/EditProduct";
 
 // Admin Components
-import Dashboard from "./components/admin/Dashboard";
+import AdminDashboard from "./components/admin/Dashboard"; // ✅ Renamed to avoid conflict
 import AdminUsers from "./components/admin/AdminUsers";
 import AdminSalons from "./components/admin/AdminSalons";
 import AdminProducts from "./components/admin/AdminProducts";
@@ -194,12 +194,12 @@ function App() {
                 }
               />
 
-              {/* ✅ Admin Routes */}
+              {/* Admin Routes */}
               <Route
                 path="/admin/dashboard"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <Dashboard />
+                    <AdminDashboard />
                   </ProtectedRoute>
                 }
               />

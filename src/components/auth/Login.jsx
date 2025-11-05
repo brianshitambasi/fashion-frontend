@@ -226,7 +226,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/lo
                   </button>
                 </div>
 
-                {/* Demo Accounts */}
+                {/* Demo Accounts
                 <div className="mb-4">
                   <div className="text-center mb-3">
                     <small className="text-muted">Quick Demo Access</small>
@@ -257,7 +257,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/lo
                       Demo Admin
                     </button>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Divider */}
                 <div className="text-center mb-4">
