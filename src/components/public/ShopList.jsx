@@ -5,8 +5,8 @@ const ShopList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Backend base URL
-  const BACKEND_URL = 'https://hair-salon-app-hypp.onrender.com';
+  // ✅ CORRECT Backend URL - use the one from your error
+  const BACKEND_URL = 'https://hair-salon-app-1.onrender.com';
 
   const fetchShops = async () => {
     try {
