@@ -13,7 +13,7 @@ const ShopList = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`${BACKEND_URL}/shops`);
+      const response = await fetch(`${BACKEND_URL}/shop`);
       
       if (!response.ok) {
         throw new Error(`Failed to load shops: ${response.status}`);
