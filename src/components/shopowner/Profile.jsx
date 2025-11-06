@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Spinner, Alert, Form, Button, Card, Row, Col } from "react-bootstrap";
 
-const API_BASE = "https://hair-salon-app-1.onrender.com/api/settings";
+const API_BASE = "https://hair-salon-app-1.onrender.com/settings";
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);
