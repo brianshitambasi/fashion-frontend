@@ -141,18 +141,14 @@ const ShopOwnerBookings = () => {
   };
 
   const getStatusBadge = (status) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-700",
-      confirmed: "bg-blue-100 text-blue-700",
-      completed: "bg-green-100 text-green-700",
-      cancelled: "bg-red-100 text-red-700",
+    const badgeMap = {
+      pending: "bg-warning text-dark",
+      confirmed: "bg-primary text-white",
+      completed: "bg-success text-white",
+      cancelled: "bg-danger text-white",
     };
     return (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          colors[status] || "bg-gray-100 text-gray-700"
-        }`}
-      >
+      <span className={`badge ${badgeMap[status] || "bg-secondary"}`}>
         {status}
       </span>
     );
@@ -173,16 +169,20 @@ const ShopOwnerBookings = () => {
    * Render
    * -------------------------- */
   if (loading) {
-    return <div className="p-4 text-center">Loading bookings...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container py-4">
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Bookings</h1>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="fw-bold mb-0">📅 Bookings</h2>
         <button
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="btn btn-primary"
           onClick={() => fetchData(true)}
           disabled={refreshing}
         >
@@ -191,101 +191,94 @@ const ShopOwnerBookings = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Search customer or service..."
-          className="border px-3 py-2 rounded w-64"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        <select
-          className="border px-3 py-2 rounded"
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-        >
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-
-        <select
-          className="border px-3 py-2 rounded"
-          value={selectedShop}
-          onChange={(e) => setSelectedShop(e.target.value)}
-        >
-          <option value="all">All Shops</option>
-          {shops.map((shop) => (
-            <option key={shop._id} value={shop._id}>
-              {shop.name}
-            </option>
-          ))}
-        </select>
+      <div className="row g-3 mb-4">
+        <div className="col-md-4">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search customer or service..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="col-md-3">
+          <select
+            className="form-select"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+          >
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div className="col-md-3">
+          <select
+            className="form-select"
+            value={selectedShop}
+            onChange={(e) => setSelectedShop(e.target.value)}
+          >
+            <option value="all">All Shops</option>
+            {shops.map((shop) => (
+              <option key={shop._id} value={shop._id}>
+                {shop.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6 text-center">
-        <div className="bg-gray-100 p-3 rounded">
-          <p className="text-gray-600 text-sm">Total</p>
-          <p className="text-xl font-semibold">{stats.total}</p>
-        </div>
-        <div className="bg-yellow-100 p-3 rounded">
-          <p className="text-gray-600 text-sm">Pending</p>
-          <p className="text-xl font-semibold">{stats.pending}</p>
-        </div>
-        <div className="bg-blue-100 p-3 rounded">
-          <p className="text-gray-600 text-sm">Confirmed</p>
-          <p className="text-xl font-semibold">{stats.confirmed}</p>
-        </div>
-        <div className="bg-green-100 p-3 rounded">
-          <p className="text-gray-600 text-sm">Completed</p>
-          <p className="text-xl font-semibold">{stats.completed}</p>
-        </div>
-        <div className="bg-red-100 p-3 rounded">
-          <p className="text-gray-600 text-sm">Cancelled</p>
-          <p className="text-xl font-semibold">{stats.cancelled}</p>
-        </div>
-        <div className="bg-gray-200 p-3 rounded">
-          <p className="text-gray-600 text-sm">Revenue</p>
-          <p className="text-xl font-semibold">${stats.revenue}</p>
-        </div>
+      {/* Stats */}
+      <div className="row text-center mb-4">
+        {[
+          { label: "Total", value: stats.total, color: "bg-light" },
+          { label: "Pending", value: stats.pending, color: "bg-warning bg-opacity-25" },
+          { label: "Confirmed", value: stats.confirmed, color: "bg-primary bg-opacity-25" },
+          { label: "Completed", value: stats.completed, color: "bg-success bg-opacity-25" },
+          { label: "Cancelled", value: stats.cancelled, color: "bg-danger bg-opacity-25" },
+          { label: "Revenue", value: `$${stats.revenue}`, color: "bg-secondary bg-opacity-25" },
+        ].map((s, i) => (
+          <div key={i} className="col-6 col-md-2 mb-3">
+            <div className={`p-3 rounded shadow-sm ${s.color}`}>
+              <p className="text-muted mb-1 small">{s.label}</p>
+              <h5 className="fw-semibold mb-0">{s.value}</h5>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Bookings Table */}
       {filteredBookings.length === 0 ? (
-        <div className="text-center text-gray-500">No bookings found.</div>
+        <div className="alert alert-secondary text-center">No bookings found.</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border text-sm">
-            <thead className="bg-gray-100">
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover align-middle">
+            <thead className="table-light">
               <tr>
-                <th className="border px-4 py-2">Customer</th>
-                <th className="border px-4 py-2">Service</th>
-                <th className="border px-4 py-2">Date</th>
-                <th className="border px-4 py-2">Shop</th>
-                <th className="border px-4 py-2">Amount</th>
-                <th className="border px-4 py-2">Status</th>
-                <th className="border px-4 py-2">Actions</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Date</th>
+                <th>Shop</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredBookings.map((b) => (
-                <tr key={b._id} className="text-center">
-                  <td className="border px-4 py-2">{b.customer?.name || "-"}</td>
-                  <td className="border px-4 py-2">{b.service || "-"}</td>
-                  <td className="border px-4 py-2">{formatDate(b.date)}</td>
-                  <td className="border px-4 py-2">{b.shop?.name || "-"}</td>
-                  <td className="border px-4 py-2">
-                    ${b.totalAmount?.toFixed(2) || "0.00"}
-                  </td>
-                  <td className="border px-4 py-2">{getStatusBadge(b.status)}</td>
-                  <td className="border px-4 py-2">
+                <tr key={b._id}>
+                  <td>{b.customer?.name || "-"}</td>
+                  <td>{b.service || "-"}</td>
+                  <td>{formatDate(b.date)}</td>
+                  <td>{b.shop?.name || "-"}</td>
+                  <td>${b.totalAmount?.toFixed(2) || "0.00"}</td>
+                  <td>{getStatusBadge(b.status)}</td>
+                  <td>
                     {getStatusOptions(b.status).length > 0 ? (
                       <select
-                        className="border px-2 py-1 rounded"
+                        className="form-select form-select-sm"
                         onChange={(e) =>
                           updateBookingStatus(b._id, e.target.value)
                         }
