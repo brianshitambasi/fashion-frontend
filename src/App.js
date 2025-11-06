@@ -25,8 +25,8 @@ import CustomerCart from "./components/customer/CustomerCart";
 import CustomerProfile from "./components/customer/CustomerProfile";
 
 // Shop Owner Components - ✅ Removed trailing spaces
-import ShopOwnerDashboard from "./components/shopowner/ShopOwnerDashboard ";
-import ShopOwnerShops from "./components/shopowner/ShopOwnerShops ";
+import ShopOwnerDashboard from "./components/shopowner/ShopOwnerDashboard ";//mared
+import ShopOwnerShops from "./components/shopowner/ShopOwnerShops ";//mared
 import CreateShop from "./components/shopowner/CreateShop";
 import EditShop from "./components/shopowner/EditShop";
 import ShopOwnerBookings from "./components/shopowner/ShopOwnerBookings";
