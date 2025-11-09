@@ -86,7 +86,7 @@ const CustomerCart = () => {
         };
 
         await axios.post(
-          'https://hair-salon-app-1.onrender.com/bookings',
+          'https://hair-salon-app-1.onrender.com/booking',
           bookingData,
           {
             headers: { Authorization: `Bearer ${token}` }

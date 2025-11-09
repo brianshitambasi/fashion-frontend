@@ -23,10 +23,11 @@ import CustomerDashboard from "./components/customer/CustomerDashboard";
 import CustomerBookings from "./components/customer/CustomerBookings";
 import CustomerCart from "./components/customer/CustomerCart";
 import CustomerProfile from "./components/customer/CustomerProfile";
+import Payment from "./components/customer/Payment";
 
-// Shop Owner Components - ✅ Removed trailing spaces
-import ShopOwnerDashboard from "./components/shopowner/ShopOwnerDashboard ";//mared
-import ShopOwnerShops from "./components/shopowner/ShopOwnerShops ";//mared
+// Shop Owner Components - ✅ Fixed import names (removed trailing spaces)
+import ShopOwnerDashboard from "./components/shopowner/ShopOwnerDashboard";
+import ShopOwnerShops from "./components/shopowner/ShopOwnerShops";
 import CreateShop from "./components/shopowner/CreateShop";
 import EditShop from "./components/shopowner/EditShop";
 import ShopOwnerBookings from "./components/shopowner/ShopOwnerBookings";
@@ -38,7 +39,7 @@ import CreateProduct from "./components/shopowner/CreateProduct";
 import EditProduct from "./components/shopowner/EditProduct";
 
 // Admin Components
-import AdminDashboard from "./components/admin/Dashboard"; // ✅ Renamed to avoid conflict
+import AdminDashboard from "./components/admin/Dashboard";
 import AdminUsers from "./components/admin/AdminUsers";
 import AdminSalons from "./components/admin/AdminSalons";
 import AdminProducts from "./components/admin/AdminProducts";
@@ -100,6 +101,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={["customer"]}>
                     <CustomerProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/customer/payment/:bookingId"
+                element={
+                  <ProtectedRoute allowedRoles={["customer"]}>
+                    <Payment />
                   </ProtectedRoute>
                 }
               />

@@ -33,7 +33,7 @@ const ShopDetails = () => {
     try {
       setLoading(true);
       const [shopRes, reviewsRes, hairstylesRes] = await Promise.all([
-        axios.get(`https://hair-salon-app-1.onrender.com/shops/${id}`),
+        axios.get(`https://hair-salon-app-1.onrender.com/shop/${id}`),
         axios.get(`https://hair-salon-app-1.onrender.com/reviews/shop/${id}`).catch(err => ({ data: [] })),
         axios.get(`https://hair-salon-app-1.onrender.com/hairstyles/shop/${id}`).catch(err => ({ data: [] }))
       ]);
@@ -112,7 +112,7 @@ const ShopDetails = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('https://hair-salon-app-1.onrender.com/bookings', {
+      const response = await axios.post('https://hair-salon-app-1.onrender.com/booking', {
         shop: id,
         service: {
           serviceName: selectedService.serviceName,
@@ -153,7 +153,7 @@ const ShopDetails = () => {
       alert('M-Pesa payment initiated! Please check your phone to complete the transaction.');
       
       // Redirect to bookings page
-      navigate('/customer/bookings');
+      navigate('/customer/booking');
       
     } catch (error) {
       console.error('Error processing payment:', error);

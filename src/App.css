@@ -478,3 +478,30 @@ body {
     align-items: center;
   }
 }
+
+.text-pink {
+  color: #e91e63 !important;
+}
+
+.btn-pink {
+  background-color: #e91e63;
+  color: white;
+  border: none;
+  transition: 0.3s;
+}
+
+.btn-pink:hover {
+  background-color: #c2185b;
+  color: white;
+}
+
+.nav-link {
+  color: #444 !important;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #e91e63 !important;
+}

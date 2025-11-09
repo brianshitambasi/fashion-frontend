@@ -58,12 +58,12 @@ export const AuthProvider = ({ children }) => {
 
           // Try different endpoints if /user/verify doesn't work
           try {
-            await axios.get("https://hair-salon-app-1.onrender.com/user/verify", {
+            await axios.get("https://hair-salon-app-1.onrender.com/user/me", {
               headers: { Authorization: `Bearer ${token}` },
             });
           } catch (verifyError) {
             // If /user/verify fails, try /auth/me
-            await axios.get("https://hair-salon-app-1.onrender.com/auth/me", {
+            await axios.get("https://hair-salon-app-1.onrender.com/user/me", {
               headers: { Authorization: `Bearer ${token}` },
             });
           }

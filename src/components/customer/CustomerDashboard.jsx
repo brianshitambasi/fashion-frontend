@@ -25,7 +25,7 @@ const CustomerDashboard = () => {
       
       // Fetch bookings
       const bookingsResponse = await axios.get(
-        'https://hair-salon-app-1.onrender.com/bookings',
+        'https://hair-salon-app-1.onrender.com/booking',
         {
           headers: { Authorization: `Bearer ${token}` }
         }
