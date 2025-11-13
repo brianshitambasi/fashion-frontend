@@ -1,13 +1,17 @@
-import React, { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+// src/context/ProtectedRoute.jsx
+import React from "react";
+import { useAuth } from "../context/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { user, loading } = useContext(AuthContext);
+  const { user, loading } = useAuth(); // ✅ using useAuth instead of useContext(AuthContext)
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "50vh" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>

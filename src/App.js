@@ -1,8 +1,8 @@
-// App.js
+// src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./context/ProtectedRoute"; 
+import ProtectedRoute from "./context/ProtectedRoute";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 
@@ -25,7 +25,7 @@ import CustomerCart from "./components/customer/CustomerCart";
 import CustomerProfile from "./components/customer/CustomerProfile";
 import Payment from "./components/customer/Payment";
 
-// Shop Owner Components - ✅ Fixed import names (removed trailing spaces)
+// Shop Owner Components
 import ShopOwnerDashboard from "./components/shopowner/ShopOwnerDashboard";
 import ShopOwnerShops from "./components/shopowner/ShopOwnerShops";
 import CreateShop from "./components/shopowner/CreateShop";
@@ -261,7 +261,7 @@ function App() {
                 }
               />
 
-              {/* 404 Page */}
+              {/* 404 */}
               <Route path="*" element={<PageNotFound />} />
             </Routes>
           </main>
