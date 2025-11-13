@@ -42,9 +42,9 @@ const CustomerBookings = () => {
 
   useEffect(() => {
     const fetchBookings = async () => {
-      if (!user || !user._id) return;
+      if (!token) return;
       try {
-        const res = await axios.get(`${BACKEND_URL}/booking/customer/${user._id}`, {
+        const res = await axios.get(`${BACKEND_URL}/booking`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBookings(res.data);
@@ -53,7 +53,7 @@ const CustomerBookings = () => {
       }
     };
     fetchBookings();
-  }, [user, token]);
+  }, [token]);
 
   const toggleService = (service) => {
     setSelectedServices((prev) =>
@@ -65,40 +65,102 @@ const CustomerBookings = () => {
 
   const totalCost = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
-  const handleBooking = async () => {
+  // Add services to cart first, then checkout
+  const addToCart = async () => {
     if (!selectedServices.length) return alert("Please select at least one service.");
     if (!dateTime) return alert("Please select a booking date and time.");
     if (!user || !user._id) return alert("User not found. Please log in again.");
 
-    const dateObj = new Date(dateTime);
-    const date = dateObj.toISOString().split("T")[0];
-    const time = dateObj.toTimeString().slice(0, 5);
+    try {
+      setSubmitting(true);
+
+      // Add each selected service to cart
+      for (const service of selectedServices) {
+        await axios.post(
+          `${BACKEND_URL}/cart/add`,
+          {
+            shop: shopId,
+            serviceName: service.serviceName,
+            price: service.price,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      }
+
+      // After adding to cart, proceed to checkout
+      await handleCheckout();
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert(error.response?.data?.message || "Failed to add services to cart.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Checkout cart to create booking
+  const handleCheckout = async () => {
+    try {
+      const checkoutResponse = await axios.post(
+        `${BACKEND_URL}/booking/checkout`,
+        {
+          dateTime: new Date(dateTime).toISOString(),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      alert("Booking created successfully!");
+      setSelectedServices([]);
+      setDateTime("");
+
+      // Refresh bookings list
+      const bookingsRes = await axios.get(`${BACKEND_URL}/booking`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBookings(bookingsRes.data);
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      alert(error.response?.data?.message || "Failed to create booking.");
+    }
+  };
+
+  // Direct booking without cart (alternative approach)
+  const handleDirectBooking = async () => {
+    if (!selectedServices.length) return alert("Please select at least one service.");
+    if (!dateTime) return alert("Please select a booking date and time.");
+    if (!user || !user._id) return alert("User not found. Please log in again.");
 
     try {
       setSubmitting(true);
 
-      for (const s of selectedServices) {
-        const payload = {
-          shop: shop._id,
-          service: { serviceName: s.serviceName, price: s.price },
-          customer: user._id,
-          date,
-          time,
-        };
+      const bookingData = {
+        customer: user._id,
+        shop: shopId,
+        services: selectedServices.map(service => ({
+          serviceName: service.serviceName,
+          price: service.price,
+        })),
+        totalPrice: totalCost,
+        dateTime: new Date(dateTime).toISOString(),
+        status: "pending",
+      };
 
-        await axios.post(`${BACKEND_URL}/booking`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
+      const response = await axios.post(`${BACKEND_URL}/booking/direct`, bookingData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      alert("Booking(s) created successfully!");
+      alert("Booking created successfully!");
       setSelectedServices([]);
       setDateTime("");
 
-      const res = await axios.get(`${BACKEND_URL}/booking/customer/${user._id}`, {
+      // Refresh bookings list
+      const bookingsRes = await axios.get(`${BACKEND_URL}/booking`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setBookings(res.data);
+      setBookings(bookingsRes.data);
     } catch (error) {
       console.error("Error creating booking:", error);
       alert(error.response?.data?.message || "Failed to create booking.");
@@ -117,7 +179,30 @@ const CustomerBookings = () => {
       alert("Booking deleted successfully!");
     } catch (error) {
       console.error("Error deleting booking:", error);
-      alert("Failed to delete booking.");
+      alert(error.response?.data?.message || "Failed to delete booking.");
+    }
+  };
+
+  const handleCancel = async (bookingId) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+    try {
+      await axios.patch(
+        `${BACKEND_URL}/booking/${bookingId}`,
+        { status: "cancelled" },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      
+      // Refresh bookings to get updated status
+      const bookingsRes = await axios.get(`${BACKEND_URL}/booking`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBookings(bookingsRes.data);
+      alert("Booking cancelled successfully!");
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      alert(error.response?.data?.message || "Failed to cancel booking.");
     }
   };
 
@@ -162,6 +247,7 @@ const CustomerBookings = () => {
           value={dateTime}
           onChange={(e) => setDateTime(e.target.value)}
           className="border p-2 rounded-md w-full md:w-1/2"
+          min={new Date().toISOString().slice(0, 16)}
         />
       </div>
 
@@ -170,11 +256,11 @@ const CustomerBookings = () => {
           Total: <span className="text-blue-600">KSh {totalCost}</span>
         </h3>
         <button
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-          onClick={handleBooking}
-          disabled={submitting}
+          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
+          onClick={addToCart} // Use addToCart for cart flow or handleDirectBooking for direct booking
+          disabled={submitting || !selectedServices.length || !dateTime}
         >
-          {submitting ? "Processing..." : "Confirm Booking"}
+          {submitting ? "Processing..." : "Book Now"}
         </button>
       </div>
 
@@ -184,26 +270,64 @@ const CustomerBookings = () => {
           <p className="text-gray-500">No bookings yet.</p>
         ) : (
           <ul className="space-y-4">
-            {bookings.map((b) => (
+            {bookings.map((booking) => (
               <li
-                key={b._id}
-                className="p-4 border rounded-md flex justify-between items-center"
+                key={booking._id}
+                className="p-4 border rounded-md"
               >
-                <div>
-                  <p className="font-medium">{b.service?.serviceName}</p>
-                  <p className="text-sm text-gray-600">
-                    Date: {b.date} | Time: {b.time}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Status: {b.status || "pending"}
-                  </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium">{booking.shop?.name}</p>
+                    <div className="mt-2">
+                      {booking.services?.map((service, index) => (
+                        <div key={index} className="text-sm text-gray-600">
+                          {service.serviceName} - KSh {service.price}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Date: {new Date(booking.dateTime).toLocaleDateString()} | 
+                      Time: {new Date(booking.dateTime).toLocaleTimeString()}
+                    </p>
+                    <p className={`text-sm font-medium mt-1 ${
+                      booking.status === 'confirmed' ? 'text-green-600' :
+                      booking.status === 'cancelled' ? 'text-red-600' :
+                      booking.status === 'completed' ? 'text-blue-600' :
+                      'text-yellow-600'
+                    }`}>
+                      Status: {booking.status?.toUpperCase()}
+                    </p>
+                    <p className="text-sm font-semibold mt-1">
+                      Total: KSh {booking.totalPrice}
+                    </p>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    {booking.status === "pending" && (
+                      <>
+                        <button
+                          className="text-red-600 hover:underline text-sm"
+                          onClick={() => handleCancel(booking._id)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="text-red-600 hover:underline text-sm"
+                          onClick={() => handleDelete(booking._id)}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                    {booking.status === "confirmed" && (
+                      <button
+                        className="text-red-600 hover:underline text-sm"
+                        onClick={() => handleCancel(booking._id)}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <button
-                  className="text-red-600 hover:underline"
-                  onClick={() => handleDelete(b._id)}
-                >
-                  Delete
-                </button>
               </li>
             ))}
           </ul>
