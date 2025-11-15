@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 // import "./Footer.css";
 
+
+
 function Footer() {
   return (
     <footer className="footer bg-dark text-light pt-5 mt-auto">
