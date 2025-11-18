@@ -22,7 +22,6 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    // Clear errors when user starts typing
     if (error) setError('');
   };
 
@@ -55,6 +54,10 @@ const Register = () => {
       setError('Address is required');
       return false;
     }
+    if (!formData.role) {
+      setError('Please select an account type');
+      return false;
+    }
     return true;
   };
 
@@ -63,27 +66,25 @@ const Register = () => {
     setError('');
     setSuccess('');
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
 
     try {
-// In Register.js, change the axios call to:
-const response = await axios.post('https://hair-salon-app-1.onrender.com/user/register', formData);      
+      // Send exactly what your backend expects
+      const response = await axios.post(
+        'https://hair-salon-app-1.onrender.com/user/register',
+        formData
+      );
+
       setSuccess('✅ Registration successful! Redirecting to login...');
-      
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      setTimeout(() => navigate('/login'), 2000);
 
     } catch (error) {
       console.error('Registration error:', error);
       setError(
-        error.response?.data?.message || 
-        error.response?.data?.error || 
+        error.response?.data?.message ||
+        error.response?.data?.error ||
         'Registration failed. Please try again.'
       );
     } finally {
@@ -96,7 +97,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
       <div className="row justify-content-center">
         <div className="col-md-8 col-lg-6">
           <div className="card shadow-lg border-0">
-            {/* Header Section */}
+            {/* Header */}
             <div className="card-header bg-primary text-white text-center py-4">
               <div className="d-flex align-items-center justify-content-center mb-3">
                 <i className="bi bi-scissors display-6 me-3"></i>
@@ -108,15 +109,12 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
             </div>
 
             <div className="card-body p-4 p-md-5">
-              {/* Success Message */}
               {success && (
                 <div className="alert alert-success d-flex align-items-center" role="alert">
                   <i className="bi bi-check-circle-fill me-2"></i>
                   <div>{success}</div>
                 </div>
               )}
-
-              {/* Error Message */}
               {error && (
                 <div className="alert alert-danger d-flex align-items-center" role="alert">
                   <i className="bi bi-exclamation-triangle-fill me-2"></i>
@@ -126,7 +124,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
 
               <form onSubmit={handleSubmit}>
                 <div className="row">
-                  {/* Personal Information */}
+                  {/* Personal Info */}
                   <div className="col-12">
                     <h5 className="text-primary mb-3">
                       <i className="bi bi-person-badge me-2"></i>
@@ -139,14 +137,12 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                       Full Name <span className="text-danger">*</span>
                     </label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <i className="bi bi-person"></i>
-                      </span>
+                      <span className="input-group-text"><i className="bi bi-person"></i></span>
                       <input
                         type="text"
-                        className="form-control"
                         id="name"
                         name="name"
+                        className="form-control"
                         value={formData.name}
                         onChange={handleChange}
                         placeholder="Enter your full name"
@@ -160,14 +156,12 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                       Phone Number <span className="text-danger">*</span>
                     </label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <i className="bi bi-phone"></i>
-                      </span>
+                      <span className="input-group-text"><i className="bi bi-phone"></i></span>
                       <input
                         type="tel"
-                        className="form-control"
                         id="phone"
                         name="phone"
+                        className="form-control"
                         value={formData.phone}
                         onChange={handleChange}
                         placeholder="e.g., +254712345678"
@@ -181,14 +175,12 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                       Email Address <span className="text-danger">*</span>
                     </label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <i className="bi bi-envelope"></i>
-                      </span>
+                      <span className="input-group-text"><i className="bi bi-envelope"></i></span>
                       <input
                         type="email"
-                        className="form-control"
                         id="email"
                         name="email"
+                        className="form-control"
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="Enter your email"
@@ -202,14 +194,12 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                       Address <span className="text-danger">*</span>
                     </label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <i className="bi bi-geo-alt"></i>
-                      </span>
+                      <span className="input-group-text"><i className="bi bi-geo-alt"></i></span>
                       <input
                         type="text"
-                        className="form-control"
                         id="address"
                         name="address"
+                        className="form-control"
                         value={formData.address}
                         onChange={handleChange}
                         placeholder="Enter your address"
@@ -218,7 +208,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                     </div>
                   </div>
 
-                  {/* Account Type & Password */}
+                  {/* Account Settings */}
                   <div className="col-12 mt-4">
                     <h5 className="text-primary mb-3">
                       <i className="bi bi-shield-lock me-2"></i>
@@ -231,27 +221,24 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                       Account Type <span className="text-danger">*</span>
                     </label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <i className="bi bi-person-rolodex"></i>
-                      </span>
+                      <span className="input-group-text"><i className="bi bi-person-rolodex"></i></span>
                       <select
-                        className="form-select"
                         id="role"
                         name="role"
+                        className="form-select"
                         value={formData.role}
                         onChange={handleChange}
                         required
                       >
                         <option value="customer">👤 Customer</option>
-                        <option value="shopowner">🏪 Shop Owner</option>
-                         <option value="admin">🛠️ Admin</option>
+                        <option value="shop">🏪 Shop Owner</option>
+                        <option value="admin">🛠️ Admin</option>
                       </select>
                     </div>
                     <div className="form-text">
-                      {formData.role === 'customer' 
+                      {formData.role === 'customer'
                         ? 'Book appointments at hair salons'
-                        : 'List your salon and manage bookings'
-                      }
+                        : 'List your salon and manage bookings'}
                     </div>
                   </div>
 
@@ -260,14 +247,12 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                       Password <span className="text-danger">*</span>
                     </label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <i className="bi bi-key"></i>
-                      </span>
+                      <span className="input-group-text"><i className="bi bi-key"></i></span>
                       <input
                         type="password"
-                        className="form-control"
                         id="password"
                         name="password"
+                        className="form-control"
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="Create a password"
@@ -275,13 +260,11 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                         minLength="6"
                       />
                     </div>
-                    <div className="form-text">
-                      Must be at least 6 characters long
-                    </div>
+                    <div className="form-text">Must be at least 6 characters long</div>
                   </div>
                 </div>
 
-                {/* Terms and Conditions */}
+                {/* Terms */}
                 <div className="mb-4">
                   <div className="form-check">
                     <input
@@ -298,7 +281,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
                   </div>
                 </div>
 
-                {/* Submit Button */}
+                {/* Submit */}
                 <div className="d-grid mb-4">
                   <button
                     type="submit"
@@ -341,7 +324,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
             </div>
           </div>
 
-          {/* Additional Info Cards */}
+          {/* Info Cards */}
           <div className="row mt-4">
             <div className="col-md-6">
               <div className="card border-0 bg-light">
@@ -366,6 +349,7 @@ const response = await axios.post('https://hair-salon-app-1.onrender.com/user/re
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
