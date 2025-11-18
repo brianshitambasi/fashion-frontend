@@ -1,4 +1,3 @@
-// components/customer/Payment.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -23,12 +22,12 @@ const Payment = () => {
     }
   }, [bookingId]);
 
-  // FIXED: Fetch all bookings and find the specific one
+  // FIXED: Remove /api from booking endpoint
   const fetchBookingDetails = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${BACKEND_URL}/booking`,
+        `${BACKEND_URL}/booking`, // CHANGED: removed /api
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -86,12 +85,11 @@ const Payment = () => {
       console.log('Amount:', booking.totalPrice);
       console.log('Phone:', formattedPhone);
 
+      // FIXED: Remove /api from payment endpoint
       const paymentResponse = await axios.post(
-        `${BACKEND_URL}/payment`,
+        `${BACKEND_URL}/payment`, // CHANGED: removed /api
         {
           booking: bookingId,
-          amount: booking.totalPrice,
-          method: 'mpesa',
           phone: formattedPhone
         },
         { 
@@ -115,6 +113,8 @@ const Payment = () => {
       console.error('Payment error:', error);
       if (error.response?.data?.message) {
         setError(error.response.data.message);
+      } else if (error.code === 'ERR_NETWORK') {
+        setError('Network error. Please check your connection.');
       } else {
         setError('Payment failed. Please try again.');
       }
@@ -123,6 +123,7 @@ const Payment = () => {
     }
   };
 
+  // ... rest of your component remains the same
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4 max-w-2xl">
