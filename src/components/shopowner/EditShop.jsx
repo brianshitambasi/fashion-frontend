@@ -1,4 +1,3 @@
-// components/shopowner/EditShop.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -23,6 +22,23 @@ const EditShop = () => {
     fetchShop();
   }, [id]);
 
+  const getImageUrl = (image) => {
+    if (!image) return null;
+    
+    if (typeof image === 'object' && image.url) {
+      return image.url;
+    }
+    
+    if (typeof image === 'string') {
+      if (image.startsWith('http')) {
+        return image;
+      }
+      return `https://hair-salon-app-1.onrender.com${image}`;
+    }
+    
+    return null;
+  };
+
   const fetchShop = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -40,7 +56,10 @@ const EditShop = () => {
       
       if (shop.image) {
         setCurrentImage(shop.image);
-        setImagePreview(`https://hair-salon-app-1.onrender.com${shop.image}`);
+        const imageUrl = getImageUrl(shop.image);
+        if (imageUrl) {
+          setImagePreview(imageUrl);
+        }
       }
     } catch (error) {
       console.error('Error fetching shop:', error);
@@ -167,6 +186,7 @@ const EditShop = () => {
         }
       });
 
+      console.log('Shop updated with Cloudinary:', response.data);
       alert('Salon updated successfully!');
       navigate('/shopowner/shops');
     } catch (error) {
@@ -190,9 +210,10 @@ const EditShop = () => {
     );
   }
 
+  const currentImageUrl = getImageUrl(currentImage);
+
   return (
     <div className="container py-4">
-      {/* Header */}
       <div className="row mb-4">
         <div className="col">
           <nav aria-label="breadcrumb">
@@ -225,7 +246,6 @@ const EditShop = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                {/* Basic Information */}
                 <div className="mb-4">
                   <h5 className="mb-3 text-primary">
                     <i className="bi bi-info-circle me-2"></i>
@@ -274,7 +294,6 @@ const EditShop = () => {
                   </div>
                 </div>
 
-                {/* Salon Image */}
                 <div className="mb-4">
                   <h5 className="mb-3 text-primary">
                     <i className="bi bi-image me-2"></i>
@@ -292,15 +311,18 @@ const EditShop = () => {
                       <div className="form-text">
                         Upload a new image or keep the current one
                       </div>
-                      {currentImage && !imagePreview && (
+                      {currentImageUrl && !imagePreview && (
                         <div className="mt-2">
                           <small className="text-muted">Current image:</small>
                           <div>
                             <img 
-                              src={`https://hair-salon-app-1.onrender.com${currentImage}`} 
+                              src={currentImageUrl} 
                               alt="Current" 
                               className="img-thumbnail mt-1"
                               style={{maxHeight: '100px'}}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
                             />
                           </div>
                         </div>
@@ -326,7 +348,7 @@ const EditShop = () => {
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => {
                                 setImage(null);
-                                setImagePreview(currentImage ? `https://hair-salon-app-1.onrender.com${currentImage}` : null);
+                                setImagePreview(currentImageUrl);
                               }}
                             >
                               <i className="bi bi-arrow-counterclockwise me-1"></i>
@@ -339,7 +361,6 @@ const EditShop = () => {
                   </div>
                 </div>
 
-                {/* Services */}
                 <div className="mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <h5 className="mb-0 text-primary">
@@ -412,7 +433,6 @@ const EditShop = () => {
                   ))}
                 </div>
 
-                {/* Submit Buttons */}
                 <div className="d-flex gap-3 justify-content-end border-top pt-4">
                   <button
                     type="button"

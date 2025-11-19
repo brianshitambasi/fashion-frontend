@@ -57,25 +57,41 @@ const Login = () => {
         formData
       );
 
+      console.log('🔐 Login response:', response.data);
+
       if (response.data.token && response.data.user) {
+        // Log the actual role from backend
+        console.log('📋 Backend user role:', response.data.user.role);
+        
+        // Call login from AuthContext (which will normalize the role)
         login(response.data.user, response.data.token);
 
-        // Redirect based on role
-        const userRole = response.data.user.role;
+        // Get the normalized user role for redirection
+        const normalizedRole = response.data.user.role === 'shop' ? 'shopowner' : response.data.user.role;
+        
         let redirectPath = '/';
-        if (userRole === 'customer') redirectPath = '/customer/dashboard';
-       else if (userRole === 'shopowner') redirectPath = '/shopowner/dashboard';
-        else if (userRole === 'admin') redirectPath = '/admin/dashboard';
+        
+        if (normalizedRole === 'customer') {
+          redirectPath = '/customer/dashboard';
+        } else if (normalizedRole === 'shopowner') {
+          redirectPath = '/shopowner/dashboard';
+        } else if (normalizedRole === 'admin') {
+          redirectPath = '/admin/dashboard';
+        }
 
+        console.log('🔄 Redirecting to:', redirectPath);
+        console.log('👤 Normalized user role:', normalizedRole);
+        
         navigate(redirectPath, { replace: true });
       } else {
-        setError('Invalid response from server');
+        setError('Invalid response from server - missing token or user data');
       }
 
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('❌ Login error:', err);
       setError(
         err.response?.data?.message ||
+        err.response?.data?.error ||
         'Login failed. Please check your credentials and try again.'
       );
     } finally {
@@ -92,7 +108,7 @@ const Login = () => {
               <div className="d-flex align-items-center justify-content-center mb-3">
                 <i className="bi bi-scissors display-6 me-3"></i>
                 <div>
-                  <h2 className="fw-bold mb-0">Looks Nairobi</h2>
+                  <h2 className="fw-bold mb-0">BEAUTYHUB</h2>
                   <p className="mb-0 opacity-75">Welcome Back</p>
                 </div>
               </div>
@@ -100,8 +116,8 @@ const Login = () => {
 
             <div className="card-body p-4 p-md-5">
               {error && (
-                <div className={`alert ${error.includes('Demo') ? 'alert-info' : 'alert-danger'} d-flex align-items-center`} role="alert">
-                  <i className={`bi ${error.includes('Demo') ? 'bi-info-circle' : 'bi-exclamation-triangle'}-fill me-2`}></i>
+                <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
                   <div>{error}</div>
                 </div>
               )}

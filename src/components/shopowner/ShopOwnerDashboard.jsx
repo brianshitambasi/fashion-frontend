@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext'; // ADD THIS IMPORT
+import { useAuth } from '../../context/AuthContext';
 
 const ShopOwnerDashboard = () => {
   const [stats, setStats] = useState({
@@ -15,7 +15,8 @@ const ShopOwnerDashboard = () => {
   const [recentBookings, setRecentBookings] = useState([]);
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth(); // NOW THIS WILL WORK
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchDashboardData();
@@ -23,23 +24,48 @@ const ShopOwnerDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
+      setError(null);
       const token = localStorage.getItem('token');
-      const [shopsRes, bookingsRes] = await Promise.all([
-        axios.get('https://hair-salon-app-1.onrender.com/shop/getMyShops', {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get('https://hair-salon-app-1.onrender.com/booking', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
+      
+      console.log('🔄 Fetching dashboard data...');
+      console.log('🔑 Token exists:', !!token);
+      console.log('👤 Current user:', user);
 
-      const shopsData = shopsRes.data;
-      const bookingsData = bookingsRes.data;
+      let shopsData = [];
+      let bookingsData = [];
 
-      // Calculate stats
+      // FIXED: Use the correct endpoint /shop/my instead of /shop/getMyShops
+      try {
+        const shopsRes = await axios.get('https://hair-salon-app-1.onrender.com/shop/my', {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        });
+        shopsData = shopsRes.data || [];
+        console.log('✅ Shops fetched successfully:', shopsData);
+      } catch (shopError) {
+        console.error('❌ Error fetching shops:', shopError);
+        console.log('Shop error details:', shopError.response?.data);
+        shopsData = [];
+      }
+
+      // Try to fetch bookings
+      try {
+        const bookingsRes = await axios.get('https://hair-salon-app-1.onrender.com/booking', {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        });
+        bookingsData = bookingsRes.data || [];
+        console.log('✅ Bookings fetched successfully:', bookingsData);
+      } catch (bookingError) {
+        console.error('❌ Error fetching bookings:', bookingError);
+        console.log('Booking error details:', bookingError.response?.data);
+        bookingsData = [];
+      }
+
+      // Calculate stats with fallback for missing data
       const totalEarnings = bookingsData
         .filter(b => b.status === 'completed' && b.service)
-        .reduce((sum, booking) => sum + (booking.service.price || 0), 0);
+        .reduce((sum, booking) => sum + (booking.service?.price || 0), 0);
 
       const pendingBookings = bookingsData.filter(b => b.status === 'pending').length;
       const completedBookings = bookingsData.filter(b => b.status === 'completed').length;
@@ -59,8 +85,10 @@ const ShopOwnerDashboard = () => {
 
       setShops(shopsData);
       setRecentBookings(bookingsData.slice(0, 5));
+
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('❌ Unexpected error in fetchDashboardData:', error);
+      setError('Failed to load dashboard data. Please try refreshing the page.');
     } finally {
       setLoading(false);
     }
@@ -93,6 +121,15 @@ const ShopOwnerDashboard = () => {
 
   return (
     <div className="container py-4">
+      {/* Error Alert */}
+      {error && (
+        <div className="alert alert-warning alert-dismissible fade show" role="alert">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+          <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+        </div>
+      )}
+
       {/* Welcome Section */}
       <div className="row mb-4">
         <div className="col">

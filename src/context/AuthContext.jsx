@@ -29,6 +29,16 @@ export const AuthProvider = ({ children }) => {
 
   const isAuthenticated = !!user && !!token;
 
+  // ✅ Normalize user role - convert 'shop' to 'shopowner'
+  const normalizeUserRole = (userData) => {
+    if (!userData || !userData.role) return userData;
+    
+    return {
+      ...userData,
+      role: userData.role === 'shop' ? 'shopowner' : userData.role
+    };
+  };
+
   // ✅ Automatically add token to all axios requests
   useEffect(() => {
     const interceptor = axios.interceptors.request.use(
@@ -44,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     return () => axios.interceptors.request.eject(interceptor);
   }, [token]);
 
-  // ✅ Initialize auth on mount & whenever token/user changes
+  // ✅ Initialize auth on mount
   useEffect(() => {
     const initializeAuth = async () => {
       if (token && user) {
@@ -69,8 +79,9 @@ export const AuthProvider = ({ children }) => {
             );
             // Update user info if backend returns latest data
             if (res.data && res.data.user) {
-              setUser(res.data.user);
-              localStorage.setItem("user", JSON.stringify(res.data.user));
+              const normalizedUser = normalizeUserRole(res.data.user);
+              setUser(normalizedUser);
+              localStorage.setItem("user", JSON.stringify(normalizedUser));
             }
           } catch (verifyError) {
             console.warn("Token verification failed, logging out...");
@@ -85,13 +96,19 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []); // 👈 rerun when token/user changes
+  }, []);
 
-  // ✅ Login function
+  // ✅ Login function with role normalization
   const login = (userData, authToken) => {
-    setUser(userData);
+    console.log("🔐 Login - Original user data:", userData);
+    
+    // Normalize the user role before storing
+    const normalizedUser = normalizeUserRole(userData);
+    console.log("🔐 Login - Normalized user data:", normalizedUser);
+    
+    setUser(normalizedUser);
     setToken(authToken);
-    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
     localStorage.setItem("token", authToken);
   };
 
@@ -103,10 +120,11 @@ export const AuthProvider = ({ children }) => {
     setToken("");
   }, []);
 
-  // ✅ Update user info in both state & localStorage
+  // ✅ Update user info in both state & localStorage with normalization
   const updateUser = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+    const normalizedUser = normalizeUserRole(userData);
+    setUser(normalizedUser);
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
   };
 
   const value = {

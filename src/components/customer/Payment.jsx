@@ -22,16 +22,14 @@ const Payment = () => {
     }
   }, [bookingId]);
 
-  // FIXED: Remove /api from booking endpoint
   const fetchBookingDetails = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${BACKEND_URL}/booking`, // CHANGED: removed /api
+        `${BACKEND_URL}/booking`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Find the specific booking from all bookings
       const foundBooking = response.data.find(booking => booking._id === bookingId);
       
       if (foundBooking) {
@@ -49,23 +47,30 @@ const Payment = () => {
 
   const validatePhone = (phone) => {
     const cleaned = phone.replace(/\D/g, '');
-    return /^(254|\+254|0)?(7|1)\d{8}$/.test(cleaned);
+    return cleaned.length >= 9 && cleaned.length <= 12;
   };
 
   const formatPhone = (phone) => {
     let cleaned = phone.replace(/\D/g, '');
+    console.log('Original phone:', phone);
+    console.log('Cleaned phone:', cleaned);
+    
+    // Handle numbers starting with 0 (like 0116378188)
     if (cleaned.startsWith('0')) {
-      return '254' + cleaned.substring(1);
+      cleaned = '254' + cleaned.substring(1);
     }
-    if (cleaned.startsWith('7') || cleaned.startsWith('1')) {
-      return '254' + cleaned;
+    // If it doesn't start with 254, add it
+    else if (!cleaned.startsWith('254')) {
+      cleaned = '254' + cleaned;
     }
+    
+    console.log('Formatted phone:', cleaned);
     return cleaned;
   };
 
   const handlePayment = async () => {
     if (!validatePhone(phoneNumber)) {
-      setError('Please enter a valid Kenyan phone number (e.g., 0712345678)');
+      setError('Please enter a valid Kenyan phone number (e.g., 0712345678 or 0116378188)');
       return;
     }
 
@@ -85,9 +90,8 @@ const Payment = () => {
       console.log('Amount:', booking.totalPrice);
       console.log('Phone:', formattedPhone);
 
-      // FIXED: Remove /api from payment endpoint
       const paymentResponse = await axios.post(
-        `${BACKEND_URL}/payment`, // CHANGED: removed /api
+        `${BACKEND_URL}/payment`,
         {
           booking: bookingId,
           phone: formattedPhone
@@ -101,10 +105,8 @@ const Payment = () => {
       );
 
       console.log('Payment response:', paymentResponse.data);
-
       setSuccess('Payment initiated successfully! Check your phone for M-Pesa prompt.');
       
-      // Redirect to bookings page after 3 seconds
       setTimeout(() => {
         navigate('/customer/bookings');
       }, 3000);
@@ -123,7 +125,6 @@ const Payment = () => {
     }
   };
 
-  // ... rest of your component remains the same
   if (loading) {
     return (
       <div className="container mx-auto py-8 px-4 max-w-2xl">
@@ -157,7 +158,6 @@ const Payment = () => {
       <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Complete Your Payment</h1>
         
-        {/* Booking Summary */}
         <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
           <h2 className="text-xl font-semibold text-blue-800 mb-3">Booking Summary</h2>
           <div className="space-y-2">
@@ -180,7 +180,6 @@ const Payment = () => {
           </div>
         </div>
 
-        {/* Payment Form */}
         <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">M-Pesa Payment</h2>
           
@@ -203,7 +202,7 @@ const Payment = () => {
             <input
               type="tel"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter your M-Pesa number (e.g., 0712345678)"
+              placeholder="Enter your M-Pesa number (e.g., 0116378188 or 0712345678)"
               value={phoneNumber}
               onChange={(e) => {
                 setPhoneNumber(e.target.value);
@@ -212,7 +211,7 @@ const Payment = () => {
               disabled={processing}
             />
             <p className="text-sm text-gray-500 mt-1">
-              Enter the phone number registered with M-Pesa
+              Enter the phone number registered with M-Pesa (supports 011, 071, 010, etc.)
             </p>
           </div>
 
@@ -232,7 +231,6 @@ const Payment = () => {
           </button>
         </div>
 
-        {/* Back Button */}
         <div className="text-center">
           <button
             onClick={() => navigate('/customer/bookings')}

@@ -1,4 +1,3 @@
-// components/shopowner/MyShops.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -15,7 +14,7 @@ const ShopOwnerShops = () => {
   const fetchShops = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://hair-salon-app-1.onrender.com/shop/getMyShops', {
+      const response = await axios.get('https://hair-salon-app-1.onrender.com/shop/my', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShops(response.data);
@@ -38,7 +37,6 @@ const ShopOwnerShops = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Remove from local state
       setShops(shops.filter(shop => shop._id !== shopId));
       alert('Shop deleted successfully');
     } catch (error) {
@@ -47,6 +45,23 @@ const ShopOwnerShops = () => {
     } finally {
       setDeleteLoading(null);
     }
+  };
+
+  const getImageUrl = (image) => {
+    if (!image) return null;
+    
+    if (typeof image === 'object' && image.url) {
+      return image.url;
+    }
+    
+    if (typeof image === 'string') {
+      if (image.startsWith('http')) {
+        return image;
+      }
+      return `https://hair-salon-app-1.onrender.com${image}`;
+    }
+    
+    return null;
   };
 
   const getRatingStars = (rating) => {
@@ -76,7 +91,6 @@ const ShopOwnerShops = () => {
 
   return (
     <div className="container py-4">
-      {/* Header */}
       <div className="row mb-4">
         <div className="col">
           <nav aria-label="breadcrumb">
@@ -98,116 +112,120 @@ const ShopOwnerShops = () => {
         </div>
       </div>
 
-      {/* Shops Grid */}
       {shops.length > 0 ? (
         <div className="row g-4">
-          {shops.map(shop => (
-            <div key={shop._id} className="col-md-6 col-lg-4">
-              <div className="card h-100 shadow-sm">
-                {shop.image ? (
-                  <img 
-                    src={`https://hair-salon-app-1.onrender.com${shop.image}`} 
-                    className="card-img-top shop-image" 
-                    alt={shop.name}
-                    style={{height: '200px', objectFit: 'cover'}}
-                  />
-                ) : (
-                  <div className="card-img-top shop-image-placeholder d-flex align-items-center justify-content-center bg-light" style={{height: '200px'}}>
-                    <i className="bi bi-shop display-4 text-muted"></i>
-                  </div>
-                )}
-                
-                <div className="card-body d-flex flex-column">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <h5 className="card-title mb-0">{shop.name}</h5>
-                    {shop.rating > 0 && (
-                      <span className="badge bg-warning text-dark">
-                        <i className="bi bi-star-fill me-1"></i>
-                        {shop.rating.toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <p className="card-text text-muted small mb-2">
-                    <i className="bi bi-geo-alt me-1"></i>
-                    {shop.location}
-                  </p>
-                  
-                  <p className="card-text flex-grow-1 small">{shop.description}</p>
-                  
-                  {shop.services && shop.services.length > 0 && (
-                    <div className="mb-3">
-                      <h6 className="small fw-bold mb-2">Services ({shop.services.length})</h6>
-                      <div className="d-flex flex-wrap gap-1">
-                        {shop.services.slice(0, 3).map((service, index) => (
-                          <span key={index} className="badge bg-light text-dark small">
-                            {service.serviceName} - KSh {service.price}
-                          </span>
-                        ))}
-                        {shop.services.length > 3 && (
-                          <span className="badge bg-light text-dark small">
-                            +{shop.services.length - 3} more
-                          </span>
-                        )}
-                      </div>
+          {shops.map(shop => {
+            const imageUrl = getImageUrl(shop.image);
+            return (
+              <div key={shop._id} className="col-md-6 col-lg-4">
+                <div className="card h-100 shadow-sm">
+                  {imageUrl ? (
+                    <img 
+                      src={imageUrl}
+                      className="card-img-top shop-image" 
+                      alt={shop.name}
+                      style={{height: '200px', objectFit: 'cover'}}
+                      onError={(e) => {
+                        e.target.src = '/default-shop.jpg';
+                      }}
+                    />
+                  ) : (
+                    <div className="card-img-top shop-image-placeholder d-flex align-items-center justify-content-center bg-light" style={{height: '200px'}}>
+                      <i className="bi bi-shop display-4 text-muted"></i>
                     </div>
                   )}
-
-                  <div className="mt-auto">
-                    <div className="d-grid gap-2">
-                      <Link 
-                        to={`/shopowner/shops/edit/${shop._id}`} 
-                        className="btn btn-primary btn-sm"
-                      >
-                        <i className="bi bi-pencil me-2"></i>
-                        Edit Salon
-                      </Link>
-                      <div className="d-flex gap-2">
-                        <Link 
-                          to={`/shops/${shop._id}`} 
-                          className="btn btn-outline-primary btn-sm flex-fill"
-                          target="_blank"
-                        >
-                          <i className="bi bi-eye me-2"></i>
-                          View Public
-                        </Link>
-                        <button
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => deleteShop(shop._id, shop.name)}
-                          disabled={deleteLoading === shop._id}
-                        >
-                          {deleteLoading === shop._id ? (
-                            <span className="spinner-border spinner-border-sm" role="status"></span>
-                          ) : (
-                            <i className="bi bi-trash"></i>
+                  
+                  <div className="card-body d-flex flex-column">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <h5 className="card-title mb-0">{shop.name}</h5>
+                      {shop.rating > 0 && (
+                        <span className="badge bg-warning text-dark">
+                          <i className="bi bi-star-fill me-1"></i>
+                          {shop.rating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <p className="card-text text-muted small mb-2">
+                      <i className="bi bi-geo-alt me-1"></i>
+                      {shop.location}
+                    </p>
+                    
+                    <p className="card-text flex-grow-1 small">{shop.description}</p>
+                    
+                    {shop.services && shop.services.length > 0 && (
+                      <div className="mb-3">
+                        <h6 className="small fw-bold mb-2">Services ({shop.services.length})</h6>
+                        <div className="d-flex flex-wrap gap-1">
+                          {shop.services.slice(0, 3).map((service, index) => (
+                            <span key={index} className="badge bg-light text-dark small">
+                              {service.serviceName} - KSh {service.price}
+                            </span>
+                          ))}
+                          {shop.services.length > 3 && (
+                            <span className="badge bg-light text-dark small">
+                              +{shop.services.length - 3} more
+                            </span>
                           )}
-                        </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-auto">
+                      <div className="d-grid gap-2">
+                        <Link 
+                          to={`/shopowner/shops/edit/${shop._id}`} 
+                          className="btn btn-primary btn-sm"
+                        >
+                          <i className="bi bi-pencil me-2"></i>
+                          Edit Salon
+                        </Link>
+                        <div className="d-flex gap-2">
+                          <Link 
+                            to={`/shops/${shop._id}`} 
+                            className="btn btn-outline-primary btn-sm flex-fill"
+                            target="_blank"
+                          >
+                            <i className="bi bi-eye me-2"></i>
+                            View Public
+                          </Link>
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={() => deleteShop(shop._id, shop.name)}
+                            disabled={deleteLoading === shop._id}
+                          >
+                            {deleteLoading === shop._id ? (
+                              <span className="spinner-border spinner-border-sm" role="status"></span>
+                            ) : (
+                              <i className="bi bi-trash"></i>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Shop Footer Stats */}
-                <div className="card-footer bg-transparent">
-                  <div className="row text-center small">
-                    <div className="col-4">
-                      <div className="fw-bold text-primary">{shop.services?.length || 0}</div>
-                      <div className="text-muted">Services</div>
-                    </div>
-                    <div className="col-4">
-                      <div className="fw-bold text-success">{shop.reviews?.length || 0}</div>
-                      <div className="text-muted">Reviews</div>
-                    </div>
-                    <div className="col-4">
-                      <div className="fw-bold text-info">
-                        {getRatingStars(shop.rating)}
+                  <div className="card-footer bg-transparent">
+                    <div className="row text-center small">
+                      <div className="col-4">
+                        <div className="fw-bold text-primary">{shop.services?.length || 0}</div>
+                        <div className="text-muted">Services</div>
+                      </div>
+                      <div className="col-4">
+                        <div className="fw-bold text-success">{shop.reviews?.length || 0}</div>
+                        <div className="text-muted">Reviews</div>
+                      </div>
+                      <div className="col-4">
+                        <div className="fw-bold text-info">
+                          {getRatingStars(shop.rating)}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-5">
@@ -221,7 +239,6 @@ const ShopOwnerShops = () => {
         </div>
       )}
 
-      {/* Statistics */}
       {shops.length > 0 && (
         <div className="row mt-5">
           <div className="col-12">
