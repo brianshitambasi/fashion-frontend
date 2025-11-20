@@ -1,30 +1,41 @@
-// components/customer/CustomerCart.js
+// components/customer/CustomerCart.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
+const BACKEND_URL = 'https://hair-salon-app-1.onrender.com';
 
 const CustomerCart = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [cart, setCart] = useState(null);
+  const [cart, setCart] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
-  const BACKEND_URL = 'https://hair-salon-app-1.onrender.com';
-
   useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     fetchCart();
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   const fetchCart = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${BACKEND_URL}/cart`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setCart(response.data);
+      const response = await fetch(`${BACKEND_URL}/cart`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCart(data);
+      } else {
+        console.error('Failed to fetch cart');
+      }
     } catch (error) {
       console.error('Error fetching cart:', error);
     } finally {
@@ -35,171 +46,166 @@ const CustomerCart = () => {
   const removeFromCart = async (itemId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(
-        `${BACKEND_URL}/cart/remove/${itemId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchCart();
+      const response = await fetch(`${BACKEND_URL}/cart/remove/${itemId}`, {
+        method: 'DELETE',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        fetchCart(); // Refresh cart
+      } else {
+        alert('Failed to remove item from cart');
+      }
     } catch (error) {
       console.error('Error removing item:', error);
+      alert('Error removing item from cart');
     }
   };
 
   const clearCart = async () => {
+    if (!window.confirm('Are you sure you want to clear your cart?')) return;
+    
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${BACKEND_URL}/cart/clear`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch(`${BACKEND_URL}/cart/clear`, {
+        method: 'DELETE',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      setCart(null);
+
+      if (response.ok) {
+        setCart({ items: [], total: 0 });
+      } else {
+        alert('Failed to clear cart');
+      }
     } catch (error) {
       console.error('Error clearing cart:', error);
+      alert('Error clearing cart');
     }
   };
 
-  // FIXED: Create booking and redirect to payment with correct path
-  const proceedToCheckout = async () => {
-    if (!cart || cart.items.length === 0) return;
+  const proceedToBooking = () => {
+    if (!cart.items.length) {
+      alert('Your cart is empty');
+      return;
+    }
 
-    setProcessing(true);
-
-    try {
-      const token = localStorage.getItem('token');
-
-      // Create checkout data with all cart items
-      const checkoutData = {
-        items: cart.items.map(item => ({
-          serviceName: item.serviceName,
-          price: item.price,
-          shop: item.shop._id
-        })),
-        dateTime: new Date().toISOString()
-      };
-
-      console.log('Creating booking for payment...');
-
-      // Create booking first
-      const bookingResponse = await axios.post(
-        `${BACKEND_URL}/booking/checkout`,
-        checkoutData,
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-
-      console.log('Booking created:', bookingResponse.data);
-
-      // Get the booking ID from response
-      const bookingId = bookingResponse.data.booking?._id || bookingResponse.data._id;
-      
-      if (!bookingId) {
-        throw new Error('No booking ID received from server');
+    // Group items by shop
+    const shops = {};
+    cart.items.forEach(item => {
+      if (!shops[item.shop._id]) {
+        shops[item.shop._id] = {
+          shop: item.shop,
+          services: []
+        };
       }
+      shops[item.shop._id].services.push(item);
+    });
 
-      // Clear cart after successful booking creation
-      await axios.delete(`${BACKEND_URL}/cart/clear`, {
-        headers: { Authorization: `Bearer ${token}` }
+    // If items from multiple shops, let user choose which shop to book
+    const shopIds = Object.keys(shops);
+    if (shopIds.length === 1) {
+      navigate('/customer/booking', { 
+        state: { 
+          shopId: shopIds[0],
+          preselectedServices: shops[shopIds[0]].services 
+        } 
       });
-
-      console.log('Redirecting to payment for booking:', bookingId);
-      
-      // FIXED: Use the correct path that matches your App.js route
-      navigate(`/customer/payment/${bookingId}`);
-      
-    } catch (error) {
-      console.error('Checkout error:', error);
-      
-      if (error.response) {
-        console.error('Error status:', error.response.status);
-        console.error('Error data:', error.response.data);
-        
-        if (error.response.status === 404) {
-          alert('Checkout service not found. Please contact support.');
-        } else if (error.response.status === 401) {
-          alert('Please log in again.');
-          navigate('/login');
-        } else {
-          alert(error.response.data?.message || 'Checkout failed. Please try again.');
-        }
-      } else if (error.request) {
-        alert('Network error. Please check your connection and try again.');
-      } else {
-        alert('Error: ' + error.message);
-      }
-    } finally {
-      setProcessing(false);
+    } else {
+      // Show shop selection modal or navigate to a selection page
+      alert('Please book services from one shop at a time. You have items from multiple shops in your cart.');
     }
   };
 
-  // UI Rendering
-  if (loading) return (
-    <div className="container py-4 text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-      <p className="mt-2">Loading cart...</p>
-    </div>
-  );
-
-  if (!cart || cart.items.length === 0)
+  if (loading) {
     return (
-      <div className="container py-4 text-center">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h3 className="text-xl font-semibold text-gray-700 mb-4">Your cart is empty</h3>
-          <button 
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            onClick={() => navigate('/shops')}
-          >
-            Browse Shops
-          </button>
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading your cart...</p>
         </div>
       </div>
     );
+  }
+
+  if (!cart.items || cart.items.length === 0) {
+    return (
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
+        <div className="text-center bg-white rounded-lg shadow-md p-8 border border-gray-200">
+          <div className="text-6xl mb-4">🛒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Your cart is empty</h2>
+          <p className="text-gray-600 mb-6">Add some services from our amazing salons to get started!</p>
+          <Link 
+            to="/shops"
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          >
+            Browse Salons
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-2xl">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Cart</h1>
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <h1 className="text-3xl font-bold text-gray-800 mb-2">Shopping Cart</h1>
+      <p className="text-gray-600 mb-6">Review your selected services</p>
 
+      {/* Cart Items */}
       <div className="space-y-4 mb-6">
         {cart.items.map((item) => (
-          <div key={item._id} className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
-            <div className="flex justify-between items-start">
+          <div key={item._id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+            <div className="flex flex-col md:flex-row justify-between items-start space-y-4 md:space-y-0">
               <div className="flex-1">
-                <h5 className="text-lg font-semibold text-gray-800">{item.serviceName}</h5>
-                <p className="text-gray-600">{item.shop?.name}</p>
-                <p className="text-green-600 font-medium mt-1">KSh {item.price?.toLocaleString()}</p>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{item.serviceName}</h3>
+                <p className="text-gray-600 mb-1">
+                  <span className="font-medium">Salon:</span> {item.shop?.name}
+                </p>
+                <p className="text-gray-600 mb-1">
+                  <span className="font-medium">Location:</span> {item.shop?.location}
+                </p>
+                <p className="text-green-600 font-bold text-lg">
+                  KSh {item.price?.toLocaleString()}
+                </p>
               </div>
-              <button
-                className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors ml-4"
-                onClick={() => removeFromCart(item._id)}
-              >
-                Remove
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => removeFromCart(item._id)}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Cart Summary */}
       <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="text-xl font-semibold text-gray-800">Total:</h4>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-800">Total Amount</h3>
           <span className="text-2xl font-bold text-green-600">
             KSh {cart.total?.toLocaleString()}
           </span>
         </div>
 
-        <div className="flex space-x-4">
+        <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
           <button
-            className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors flex-1"
             onClick={clearCart}
+            className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium flex-1"
             disabled={processing}
           >
             Clear Cart
           </button>
           <button
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors flex-1"
-            onClick={proceedToCheckout}
+            onClick={proceedToBooking}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium flex-1"
             disabled={processing}
           >
             {processing ? (
@@ -208,10 +214,14 @@ const CustomerCart = () => {
                 Processing...
               </span>
             ) : (
-              'Proceed to Payment'
+              'Proceed to Booking'
             )}
           </button>
         </div>
+
+        <p className="text-sm text-gray-500 mt-4 text-center">
+          💡 Payment will be done at the salon for your security
+        </p>
       </div>
     </div>
   );

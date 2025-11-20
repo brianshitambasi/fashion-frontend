@@ -10,22 +10,22 @@ const CustomerBookings = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  const { shopId } = location.state || {};
+  const { shopId, preselectedServices } = location.state || {};
   const [shop, setShop] = useState(null);
-  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedServices, setSelectedServices] = useState(preselectedServices || []);
   const [dateTime, setDateTime] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [cartItems, setCartItems] = useState([]);
 
-  // Redirect if no shop selected
+  // Redirect if no shop selected and no preselected services
   useEffect(() => {
-    if (!shopId) {
+    if (!shopId && !preselectedServices) {
       navigate("/shops");
       return;
     }
-  }, [shopId, navigate]);
+  }, [shopId, preselectedServices, navigate]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -36,9 +36,14 @@ const CustomerBookings = () => {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Fetch shop details
+  // Fetch shop details if shopId is provided
   useEffect(() => {
     const fetchShop = async () => {
+      if (!shopId) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch(`${BACKEND_URL}/shop/${shopId}`);
         if (!response.ok) throw new Error("Failed to fetch shop");
@@ -53,59 +58,56 @@ const CustomerBookings = () => {
       }
     };
 
-    if (shopId) {
-      fetchShop();
-    }
+    fetchShop();
   }, [shopId]);
 
   // Fetch user's bookings
-  useEffect(() => {
-    const fetchBookings = async () => {
-      if (!isAuthenticated) return;
+  const fetchBookings = async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${BACKEND_URL}/booking`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${BACKEND_URL}/booking`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setBookings(data);
-        }
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
+      if (response.ok) {
+        const data = await response.json();
+        setBookings(data);
       }
-    };
-
-    fetchBookings();
-  }, [isAuthenticated]);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    }
+  };
 
   // Fetch cart items
-  useEffect(() => {
-    const fetchCart = async () => {
-      if (!isAuthenticated) return;
+  const fetchCart = async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${BACKEND_URL}/cart`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${BACKEND_URL}/cart`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setCartItems(data.items || []);
-        }
-      } catch (error) {
-        console.error("Error fetching cart:", error);
+      if (response.ok) {
+        const data = await response.json();
+        setCartItems(data.items || []);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
+  };
 
-    fetchCart();
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBookings();
+      fetchCart();
+    }
   }, [isAuthenticated]);
 
   const toggleService = (service) => {
@@ -145,6 +147,7 @@ const CustomerBookings = () => {
       if (response.ok) {
         setCartItems(prev => [...prev, { ...service, shop: shopId }]);
         alert("Service added to cart!");
+        fetchCart(); // Refresh cart
       } else {
         alert(data.message || "Failed to add to cart");
       }
@@ -154,7 +157,6 @@ const CustomerBookings = () => {
     }
   };
 
-  // FIXED: Use the correct booking checkout endpoint
   const handleBooking = async () => {
     if (!selectedServices.length) {
       alert("Please select at least one service.");
@@ -176,65 +178,83 @@ const CustomerBookings = () => {
       setSubmitting(true);
       const token = localStorage.getItem("token");
 
-      // Add selected services to cart first
-      for (const service of selectedServices) {
-        const response = await fetch(`${BACKEND_URL}/cart/add`, {
+      // If we have preselected services (from cart), use checkout
+      if (preselectedServices && preselectedServices.length > 0) {
+        // Use cart checkout
+        const checkoutResponse = await fetch(`${BACKEND_URL}/booking/checkout`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            shop: shopId,
-            serviceName: service.serviceName,
-            price: service.price,
+            dateTime: new Date(dateTime).toISOString(),
           }),
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to add service to cart");
+        if (!checkoutResponse.ok) {
+          const errorData = await checkoutResponse.json();
+          throw new Error(errorData.message || "Checkout failed");
         }
+
+        const checkoutData = await checkoutResponse.json();
+        console.log("Cart checkout successful:", checkoutData);
+        
+      } else {
+        // Add services to cart first, then checkout
+        for (const service of selectedServices) {
+          const response = await fetch(`${BACKEND_URL}/cart/add`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              shop: shopId,
+              serviceName: service.serviceName,
+              price: service.price,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to add service to cart");
+          }
+        }
+
+        // Now checkout the cart
+        const checkoutResponse = await fetch(`${BACKEND_URL}/booking/checkout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            dateTime: new Date(dateTime).toISOString(),
+          }),
+        });
+
+        if (!checkoutResponse.ok) {
+          const errorData = await checkoutResponse.json();
+          throw new Error(errorData.message || "Checkout failed");
+        }
+
+        const checkoutData = await checkoutResponse.json();
+        console.log("Checkout successful:", checkoutData);
       }
 
-      // FIXED: Use the correct booking checkout endpoint
-      console.log("Calling checkout endpoint:", `${BACKEND_URL}/booking/checkout`);
-      
-      const checkoutResponse = await fetch(`${BACKEND_URL}/booking/checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          dateTime: new Date(dateTime).toISOString(),
-        }),
-      });
-
-      if (!checkoutResponse.ok) {
-        const errorData = await checkoutResponse.json();
-        throw new Error(errorData.message || "Checkout failed");
-      }
-
-      const checkoutData = await checkoutResponse.json();
-      console.log("Checkout successful:", checkoutData);
-      
-      alert("Booking created successfully!");
+      alert("Booking created successfully! Payment will be done at the shop.");
       setSelectedServices([]);
       setDateTime("");
-      setCartItems([]);
 
-      // Refresh bookings
-      const bookingsResponse = await fetch(`${BACKEND_URL}/booking`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (bookingsResponse.ok) {
-        const bookingsData = await bookingsResponse.json();
-        setBookings(bookingsData);
-      }
+      // Refresh data
+      fetchBookings();
+      fetchCart();
+
+      // Navigate to bookings page
+      setTimeout(() => {
+        navigate("/customer/bookings");
+      }, 2000);
       
     } catch (error) {
       console.error("Booking error:", error);
@@ -244,7 +264,6 @@ const CustomerBookings = () => {
     }
   };
 
-  // ADDED: Missing handleDeleteBooking function
   const handleDeleteBooking = async (bookingId) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) return;
     
@@ -270,16 +289,14 @@ const CustomerBookings = () => {
     }
   };
 
-  // CORRECTED: handleCancelBooking using PUT method
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm("Are you sure you want to cancel this booking?")) return;
     
     try {
       const token = localStorage.getItem("token");
       
-      // Use PUT method to avoid CORS issues
       const response = await fetch(`${BACKEND_URL}/booking/${bookingId}`, {
-        method: "PUT", // ✅ USE PUT INSTEAD OF PATCH
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -294,18 +311,8 @@ const CustomerBookings = () => {
         throw new Error(errorData.message || "Failed to cancel booking");
       }
 
-      // Refresh bookings to get updated status
-      const bookingsResponse = await fetch(`${BACKEND_URL}/booking`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (bookingsResponse.ok) {
-        const bookingsData = await bookingsResponse.json();
-        setBookings(bookingsData);
-      }
-      
+      // Refresh bookings
+      fetchBookings();
       alert("Booking cancelled successfully!");
       
     } catch (error) {
@@ -318,11 +325,11 @@ const CustomerBookings = () => {
     return <div className="p-6 text-center">Loading user information...</div>;
   }
 
-  if (loading) {
+  if (loading && shopId) {
     return <div className="p-6 text-center">Loading shop details...</div>;
   }
 
-  if (!shop) {
+  if (shopId && !shop) {
     return <div className="p-6 text-center text-red-500">Shop not found.</div>;
   }
 
@@ -337,62 +344,86 @@ const CustomerBookings = () => {
         <p className="text-blue-500 text-sm mt-1">Role: {user?.role}</p>
       </div>
 
-      {/* Shop Information */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
-        <h1 className="text-3xl font-bold text-gray-800 mb-3">{shop.name}</h1>
-        <p className="text-gray-600 mb-2 flex items-center">
-          📍 {shop.location}
-        </p>
-        <p className="text-gray-700 mb-4">{shop.description}</p>
-        
-        {shop.image && (
-          <img 
-            src={shop.image} 
-            alt={shop.name}
-            className="w-full h-64 object-cover rounded-lg mb-4"
-          />
-        )}
-      </div>
-
-      {/* Available Services */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Available Services</h2>
-        <div className="space-y-3">
-          {shop.services?.map((service) => (
-            <div
-              key={service._id}
-              className={`flex justify-between items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                selectedServices.some((s) => s._id === service._id)
-                  ? "bg-green-50 border-green-500 shadow-md"
-                  : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm"
-              }`}
-              onClick={() => toggleService(service)}
-            >
-              <div className="flex-1">
-                <strong className="text-lg text-gray-800">{service.serviceName}</strong>
-                <p className="text-sm text-gray-500 mt-1">KSh {service.price.toLocaleString()}</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addToCart(service);
-                  }}
-                  className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
-                >
-                  Add to Cart
-                </button>
-                <input
-                  type="checkbox"
-                  checked={selectedServices.some((s) => s._id === service._id)}
-                  readOnly
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          ))}
+      {/* Shop Information - Only show if we have a specific shop */}
+      {shop && (
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
+          <h1 className="text-3xl font-bold text-gray-800 mb-3">{shop.name}</h1>
+          <p className="text-gray-600 mb-2 flex items-center">
+            📍 {shop.location}
+          </p>
+          <p className="text-gray-700 mb-4">{shop.description}</p>
+          
+          {shop.image && (
+            <img 
+              src={shop.image} 
+              alt={shop.name}
+              className="w-full h-64 object-cover rounded-lg mb-4"
+            />
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Available Services - Only show if we have a specific shop */}
+      {shop && shop.services && (
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Available Services</h2>
+          <div className="space-y-3">
+            {shop.services.map((service) => (
+              <div
+                key={service._id}
+                className={`flex justify-between items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  selectedServices.some((s) => s._id === service._id)
+                    ? "bg-green-50 border-green-500 shadow-md"
+                    : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm"
+                }`}
+                onClick={() => toggleService(service)}
+              >
+                <div className="flex-1">
+                  <strong className="text-lg text-gray-800">{service.serviceName}</strong>
+                  <p className="text-sm text-gray-500 mt-1">KSh {service.price.toLocaleString()}</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(service);
+                    }}
+                    className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
+                  >
+                    Add to Cart
+                  </button>
+                  <input
+                    type="checkbox"
+                    checked={selectedServices.some((s) => s._id === service._id)}
+                    readOnly
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Selected Services Summary - Show always */}
+      {selectedServices.length > 0 && (
+        <div className="bg-yellow-50 p-6 rounded-lg mb-6 border border-yellow-200">
+          <h3 className="text-xl font-semibold mb-3 text-yellow-800">Selected Services for Booking</h3>
+          <div>
+            <p className="font-medium text-yellow-700">Services:</p>
+            <ul className="list-disc list-inside mb-3 text-yellow-600">
+              {selectedServices.map(service => (
+                <li key={service._id} className="mb-1">
+                  {service.serviceName} - KSh {service.price.toLocaleString()}
+                </li>
+              ))}
+            </ul>
+            <p className="font-bold text-lg text-yellow-800">
+              Total: KSh {totalCost.toLocaleString()}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Date & Time Selection */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
@@ -408,30 +439,15 @@ const CustomerBookings = () => {
         />
       </div>
 
-      {/* Booking Summary */}
-      {selectedServices.length > 0 && (
-        <div className="bg-yellow-50 p-6 rounded-lg mb-6 border border-yellow-200">
-          <h3 className="text-xl font-semibold mb-3 text-yellow-800">Booking Summary</h3>
-          <div>
-            <p className="font-medium text-yellow-700">Selected Services:</p>
-            <ul className="list-disc list-inside mb-3 text-yellow-600">
-              {selectedServices.map(service => (
-                <li key={service._id} className="mb-1">
-                  {service.serviceName} - KSh {service.price.toLocaleString()}
-                </li>
-              ))}
-            </ul>
-            <p className="font-bold text-lg text-yellow-800">
-              Total: KSh {totalCost.toLocaleString()}
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Cart Items */}
       {cartItems.length > 0 && (
         <div className="bg-purple-50 p-6 rounded-lg mb-6 border border-purple-200">
-          <h3 className="text-xl font-semibold mb-3 text-purple-800">Cart Items ({cartItems.length})</h3>
+          <h3 className="text-xl font-semibold mb-3 text-purple-800">
+            Cart Items ({cartItems.length})
+            <span className="text-sm font-normal ml-2">
+              (Go to <a href="/customer/cart" className="underline">Cart</a> to manage)
+            </span>
+          </h3>
           <ul className="space-y-2">
             {cartItems.map((item, index) => (
               <li key={index} className="text-purple-700">
