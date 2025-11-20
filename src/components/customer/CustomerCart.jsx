@@ -110,7 +110,8 @@ const CustomerCart = () => {
     // If items from multiple shops, let user choose which shop to book
     const shopIds = Object.keys(shops);
     if (shopIds.length === 1) {
-      navigate('/customer/booking', { 
+      // FIXED: Navigate to the correct booking route that exists
+      navigate('/booking', { 
         state: { 
           shopId: shopIds[0],
           preselectedServices: shops[shopIds[0]].services 

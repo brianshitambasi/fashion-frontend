@@ -1,6 +1,6 @@
 // components/public/ShopList.jsx
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const BACKEND_URL = "https://hair-salon-app-1.onrender.com";
@@ -14,16 +14,15 @@ const ShopList = () => {
   const [selectedService, setSelectedService] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [error, setError] = useState("");
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  // All available services for filter
   const allServices = [
     "Haircut", "Hair Coloring", "Hair Styling", "Braiding", "Weaves", 
     "Hair Treatment", "Makeup", "Facial", "Manicure", "Pedicure",
     "Massage", "Waxing", "Skincare", "Barbering", "Dreadlocks"
   ];
 
-  // Extract unique locations from shops
   const locations = [...new Set(shops.map(shop => shop.location).filter(Boolean))].sort();
 
   useEffect(() => {
@@ -56,42 +55,34 @@ const ShopList = () => {
     }
   };
 
-  // IMPROVED: Function to get proper image URL from Cloudinary object
   const getImageUrl = (image) => {
     if (!image) return null;
     
-    // Case 1: Cloudinary object with url property
     if (typeof image === 'object' && image.url && image.url.startsWith('http')) {
       return image.url;
     }
     
-    // Case 2: Cloudinary object with secure_url
     if (typeof image === 'object' && image.secure_url && image.secure_url.startsWith('http')) {
       return image.secure_url;
     }
     
-    // Case 3: Cloudinary public_id only
     if (typeof image === 'object' && image.public_id && !image.url) {
       return `https://res.cloudinary.com/denczbmin/image/upload/w_800,h_600,c_fill/${image.public_id}`;
     }
     
-    // Case 4: Direct Cloudinary URL string
     if (typeof image === 'string' && image.includes('cloudinary.com')) {
       return image;
     }
     
-    // Case 5: Local file path (these don't work on deployed server)
     if (typeof image === 'string' && image.startsWith('/uploads/')) {
       console.warn("Local file path detected - this won't work:", image);
       return null;
     }
     
-    // Case 6: Any other string that might be a valid URL
     if (typeof image === 'string' && image.startsWith('http')) {
       return image;
     }
     
-    // Case 7: Empty object or invalid data
     if (typeof image === 'object' && Object.keys(image).length === 0) {
       return null;
     }
@@ -102,7 +93,6 @@ const ShopList = () => {
   const filterAndSortShops = () => {
     let filtered = [...shops];
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(shop =>
         shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,14 +104,12 @@ const ShopList = () => {
       );
     }
 
-    // Apply location filter
     if (selectedLocation) {
       filtered = filtered.filter(shop =>
         shop.location.toLowerCase().includes(selectedLocation.toLowerCase())
       );
     }
 
-    // Apply service filter
     if (selectedService) {
       filtered = filtered.filter(shop =>
         shop.services?.some(service =>
@@ -130,7 +118,6 @@ const ShopList = () => {
       );
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "name":
@@ -175,6 +162,25 @@ const ShopList = () => {
     return `${shop.rating.toFixed(1)} ★`;
   };
 
+  const handleBookNow = (shop) => {
+    if (!isAuthenticated) {
+      const confirmLogin = window.confirm(
+        "You need to log in to book services. Would you like to login now?"
+      );
+      if (confirmLogin) {
+        navigate("/login", { 
+          state: { from: "/booking", shopId: shop._id } 
+        });
+      }
+      return;
+    }
+
+    // FIXED: Navigate to the correct booking route that exists in App.js
+    navigate("/booking", { 
+      state: { shopId: shop._id } 
+    });
+  };
+
   const renderShopImage = (shop) => {
     const imageUrl = getImageUrl(shop.image);
     
@@ -189,12 +195,10 @@ const ShopList = () => {
             onError={(e) => {
               console.error("Image failed to load:", imageUrl);
               e.target.style.display = 'none';
-              // Show fallback
               const fallback = e.target.nextElementSibling;
               if (fallback) fallback.classList.remove('d-none');
             }}
           />
-          {/* Fallback that shows when image fails to load */}
           <div 
             className="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center d-none"
             style={{ height: '200px', position: 'absolute', top: 0, left: 0, right: 0 }}
@@ -207,7 +211,6 @@ const ShopList = () => {
         </>
       );
     } else {
-      // No image available - show beautiful fallback
       return (
         <div 
           className="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center"
@@ -442,7 +445,7 @@ const ShopList = () => {
               return (
                 <div key={shop._id} className="col-xl-4 col-lg-6 col-md-6">
                   <div className="card h-100 shadow-sm border-0 hover-shadow transition-all duration-300">
-                    {/* Shop Image with proper Cloudinary handling */}
+                    {/* Shop Image */}
                     <div className="position-relative">
                       {renderShopImage(shop)}
                       
@@ -509,14 +512,13 @@ const ShopList = () => {
 
                       {/* Action Buttons */}
                       <div className="d-grid gap-2 mt-auto">
-                        <Link
-                          to="/customer/booking"
-                          state={{ shopId: shop._id }}
+                        <button
+                          onClick={() => handleBookNow(shop)}
                           className="btn btn-primary btn-lg"
                         >
                           <i className="bi bi-calendar-check me-2"></i>
                           Book Now
-                        </Link>
+                        </button>
                         
                         <div className="d-flex gap-2">
                           <Link
@@ -530,7 +532,6 @@ const ShopList = () => {
                           <button
                             className="btn btn-outline-danger"
                             onClick={() => {
-                              // Add to favorites functionality
                               alert(`Added ${shop.name} to your favorites!`);
                             }}
                             title="Add to favorites"

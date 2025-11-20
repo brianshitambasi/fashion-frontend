@@ -1,6 +1,6 @@
 // components/customer/CustomerBookings.jsx
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const BACKEND_URL = "https://hair-salon-app-1.onrender.com";
@@ -8,9 +8,13 @@ const BACKEND_URL = "https://hair-salon-app-1.onrender.com";
 const CustomerBookings = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { shopId: paramShopId } = useParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  const { shopId, preselectedServices } = location.state || {};
+  // Get shopId from params or location state
+  const shopId = paramShopId || location.state?.shopId;
+  const preselectedServices = location.state?.preselectedServices || [];
+  
   const [shop, setShop] = useState(null);
   const [selectedServices, setSelectedServices] = useState(preselectedServices || []);
   const [dateTime, setDateTime] = useState("");
@@ -18,25 +22,39 @@ const CustomerBookings = () => {
   const [submitting, setSubmitting] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [cartItems, setCartItems] = useState([]);
+  const [error, setError] = useState("");
 
-  // Redirect if no shop selected and no preselected services
+  // Redirect if no shop selected
   useEffect(() => {
     if (!shopId && !preselectedServices) {
+      console.log("No shop selected, redirecting to shops");
       navigate("/shops");
       return;
     }
   }, [shopId, preselectedServices, navigate]);
 
-  // Redirect if not authenticated
+  // Handle authentication
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      alert("Please log in to book services");
-      navigate("/login");
+      const confirmLogin = window.confirm(
+        "Please log in to book services. Would you like to login now?"
+      );
+      if (confirmLogin) {
+        navigate("/login", {
+          state: {
+            from: location.pathname,
+            shopId: shopId,
+            preselectedServices: preselectedServices
+          }
+        });
+      } else {
+        navigate("/shops");
+      }
       return;
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, authLoading, navigate, location.pathname, shopId, preselectedServices]);
 
-  // Fetch shop details if shopId is provided
+  // Fetch shop details
   useEffect(() => {
     const fetchShop = async () => {
       if (!shopId) {
@@ -45,23 +63,42 @@ const CustomerBookings = () => {
       }
 
       try {
+        setLoading(true);
+        setError("");
         const response = await fetch(`${BACKEND_URL}/shop/${shopId}`);
-        if (!response.ok) throw new Error("Failed to fetch shop");
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Shop not found");
+          }
+          throw new Error(`Failed to fetch shop: ${response.status}`);
+        }
         
         const data = await response.json();
         setShop(data);
       } catch (error) {
         console.error("Error fetching shop:", error);
-        alert("Failed to load shop details");
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchShop();
+    if (shopId) {
+      fetchShop();
+    } else {
+      setLoading(false);
+    }
   }, [shopId]);
 
-  // Fetch user's bookings
+  // Fetch user data
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBookings();
+      fetchCart();
+    }
+  }, [isAuthenticated]);
+
   const fetchBookings = async () => {
     if (!isAuthenticated) return;
     
@@ -82,7 +119,6 @@ const CustomerBookings = () => {
     }
   };
 
-  // Fetch cart items
   const fetchCart = async () => {
     if (!isAuthenticated) return;
     
@@ -103,13 +139,6 @@ const CustomerBookings = () => {
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchBookings();
-      fetchCart();
-    }
-  }, [isAuthenticated]);
-
   const toggleService = (service) => {
     setSelectedServices((prev) =>
       prev.some((s) => s._id === service._id)
@@ -123,7 +152,9 @@ const CustomerBookings = () => {
   const addToCart = async (service) => {
     if (!isAuthenticated || !user) {
       alert("Please log in to add services to cart");
-      navigate("/login");
+      navigate("/login", { 
+        state: { from: location.pathname, shopId: shopId } 
+      });
       return;
     }
 
@@ -147,7 +178,7 @@ const CustomerBookings = () => {
       if (response.ok) {
         setCartItems(prev => [...prev, { ...service, shop: shopId }]);
         alert("Service added to cart!");
-        fetchCart(); // Refresh cart
+        fetchCart();
       } else {
         alert(data.message || "Failed to add to cart");
       }
@@ -170,7 +201,9 @@ const CustomerBookings = () => {
     
     if (!isAuthenticated || !user) {
       alert("Please log in to book services.");
-      navigate("/login");
+      navigate("/login", { 
+        state: { from: location.pathname, shopId: shopId } 
+      });
       return;
     }
 
@@ -180,7 +213,6 @@ const CustomerBookings = () => {
 
       // If we have preselected services (from cart), use checkout
       if (preselectedServices && preselectedServices.length > 0) {
-        // Use cart checkout
         const checkoutResponse = await fetch(`${BACKEND_URL}/booking/checkout`, {
           method: "POST",
           headers: {
@@ -201,46 +233,30 @@ const CustomerBookings = () => {
         console.log("Cart checkout successful:", checkoutData);
         
       } else {
-        // Add services to cart first, then checkout
-        for (const service of selectedServices) {
-          const response = await fetch(`${BACKEND_URL}/cart/add`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              shop: shopId,
-              serviceName: service.serviceName,
-              price: service.price,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to add service to cart");
-          }
-        }
-
-        // Now checkout the cart
-        const checkoutResponse = await fetch(`${BACKEND_URL}/booking/checkout`, {
+        // FIXED: Use the new individual booking route instead of adding to cart first
+        const bookingResponse = await fetch(`${BACKEND_URL}/booking`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
+            shop: shopId,
+            services: selectedServices.map(service => ({
+              serviceName: service.serviceName,
+              price: service.price
+            })),
             dateTime: new Date(dateTime).toISOString(),
           }),
         });
 
-        if (!checkoutResponse.ok) {
-          const errorData = await checkoutResponse.json();
-          throw new Error(errorData.message || "Checkout failed");
+        if (!bookingResponse.ok) {
+          const errorData = await bookingResponse.json();
+          throw new Error(errorData.message || "Failed to create booking");
         }
 
-        const checkoutData = await checkoutResponse.json();
-        console.log("Checkout successful:", checkoutData);
+        const bookingData = await bookingResponse.json();
+        console.log("Individual booking successful:", bookingData);
       }
 
       alert("Booking created successfully! Payment will be done at the shop.");
@@ -311,7 +327,6 @@ const CustomerBookings = () => {
         throw new Error(errorData.message || "Failed to cancel booking");
       }
 
-      // Refresh bookings
       fetchBookings();
       alert("Booking cancelled successfully!");
       
@@ -322,15 +337,45 @@ const CustomerBookings = () => {
   };
 
   if (authLoading) {
-    return <div className="p-6 text-center">Loading user information...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading user information...</p>
+        </div>
+      </div>
+    );
   }
 
   if (loading && shopId) {
-    return <div className="p-6 text-center">Loading shop details...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading shop details...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (shopId && !shop) {
-    return <div className="p-6 text-center text-red-500">Shop not found.</div>;
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <div className="text-red-600 text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-red-800 mb-2">Error Loading Shop</h2>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => navigate("/shops")}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Back to Shops
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -344,7 +389,7 @@ const CustomerBookings = () => {
         <p className="text-blue-500 text-sm mt-1">Role: {user?.role}</p>
       </div>
 
-      {/* Shop Information - Only show if we have a specific shop */}
+      {/* Shop Information */}
       {shop && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
           <h1 className="text-3xl font-bold text-gray-800 mb-3">{shop.name}</h1>
@@ -358,12 +403,15 @@ const CustomerBookings = () => {
               src={shop.image} 
               alt={shop.name}
               className="w-full h-64 object-cover rounded-lg mb-4"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
             />
           )}
         </div>
       )}
 
-      {/* Available Services - Only show if we have a specific shop */}
+      {/* Available Services */}
       {shop && shop.services && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">Available Services</h2>
@@ -405,7 +453,7 @@ const CustomerBookings = () => {
         </div>
       )}
 
-      {/* Selected Services Summary - Show always */}
+      {/* Selected Services Summary */}
       {selectedServices.length > 0 && (
         <div className="bg-yellow-50 p-6 rounded-lg mb-6 border border-yellow-200">
           <h3 className="text-xl font-semibold mb-3 text-yellow-800">Selected Services for Booking</h3>

@@ -20,7 +20,7 @@ import PageNotFound from "./components/public/PageNotFound";
 
 // Customer Components
 import CustomerDashboard from "./components/customer/CustomerDashboard";
-import CustomerBookings from "./components/customer/CustomerBookings";
+import CustomerBookings from "./components/customer/CustomerBookings"; // This is the key component
 import CustomerCart from "./components/customer/CustomerCart";
 import CustomerProfile from "./components/customer/CustomerProfile";
 import Payment from "./components/customer/Payment";
@@ -70,6 +70,24 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/not-authorized" element={<NotAuthorized />} />
+              
+              {/* ADD THIS ROUTE - Booking page accessible from public ShopList */}
+              <Route 
+                path="/booking" 
+                element={
+                  <ProtectedRoute allowedRoles={["customer"]}>
+                    <CustomerBookings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/book/:shopId" 
+                element={
+                  <ProtectedRoute allowedRoles={["customer"]}>
+                    <CustomerBookings />
+                  </ProtectedRoute>
+                } 
+              />
 
               {/* Customer Routes */}
               <Route

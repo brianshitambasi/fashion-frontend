@@ -62,13 +62,19 @@ const ShopOwnerBookings = () => {
       const token = localStorage.getItem("token");
       const newStatus = action === "accept" ? "confirmed" : "cancelled";
       
-      await axios.put(
+      // FIXED: Use PATCH instead of PUT
+      await axios.patch(
         `https://hair-salon-app-1.onrender.com/booking/${bookingId}`,
         { 
           status: newStatus,
           approvedByShop: action === "accept"
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
       
       // Remove the booking from the list after action
