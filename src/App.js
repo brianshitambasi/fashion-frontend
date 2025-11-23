@@ -20,7 +20,7 @@ import PageNotFound from "./components/public/PageNotFound";
 
 // Customer Components
 import CustomerDashboard from "./components/customer/CustomerDashboard";
-import CustomerBookings from "./components/customer/CustomerBookings"; // This is the key component
+import CustomerBookings from "./components/customer/CustomerBookings";
 import CustomerCart from "./components/customer/CustomerCart";
 import CustomerProfile from "./components/customer/CustomerProfile";
 import Payment from "./components/customer/Payment";
@@ -38,14 +38,17 @@ import ProductList from "./components/shopowner/ProductList";
 import CreateProduct from "./components/shopowner/CreateProduct";
 import EditProduct from "./components/shopowner/EditProduct";
 
-// Admin Components
+// NEW ADMIN COMPONENTS - Updated
 import AdminDashboard from "./components/admin/Dashboard";
 import AdminUsers from "./components/admin/AdminUsers";
-import AdminSalons from "./components/admin/AdminSalons";
-import AdminProducts from "./components/admin/AdminProducts";
+import AdminShops from "./components/admin/AdminShops";
+import AdminReviews from "./components/admin/AdminReviews";
+// Import other admin components as you create them
 import AdminBookings from "./components/admin/AdminBookings";
-import AdminReports from "./components/admin/AdminReports";
-import AdminSettings from "./components/admin/AdminSettings";
+import AdminPayments from "./components/admin/AdminPayments";
+import AdminAnnouncements from "./components/admin/AdminAnnouncements";
+import AdminAnalytics from "./components/admin/AdminAnalytics";
+import AdminActivities from "./components/admin/AdminActivities";
 
 // CSS
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -71,7 +74,7 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/not-authorized" element={<NotAuthorized />} />
               
-              {/* ADD THIS ROUTE - Booking page accessible from public ShopList */}
+              {/* Booking Routes */}
               <Route 
                 path="/booking" 
                 element={
@@ -221,7 +224,7 @@ function App() {
                 }
               />
 
-              {/* Admin Routes */}
+              {/* ================= ADMIN ROUTES - UPDATED ================= */}
               <Route
                 path="/admin/dashboard"
                 element={
@@ -230,6 +233,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              
+              {/* User Management */}
               <Route
                 path="/admin/users"
                 element={
@@ -238,22 +243,18 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              
+              {/* Shop Management */}
               <Route
-                path="/admin/salons"
+                path="/admin/shops"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminSalons />
+                    <AdminShops />
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/admin/products"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminProducts />
-                  </ProtectedRoute>
-                }
-              />
+              
+              {/* Booking Management */}
               <Route
                 path="/admin/bookings"
                 element={
@@ -262,19 +263,85 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              
+              {/* Review Management */}
               <Route
-                path="/admin/reports"
+                path="/admin/reviews"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminReports />
+                    <AdminReviews />
                   </ProtectedRoute>
                 }
               />
               <Route
-                path="/admin/settings"
+                path="/admin/reviews/pending"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminSettings />
+                    <AdminReviews />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Payment & Financial Management */}
+              <Route
+                path="/admin/payments"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminPayments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/revenue"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminPayments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/commissions"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminPayments />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Announcements */}
+              <Route
+                path="/admin/announcements"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminAnnouncements />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Analytics & Reports */}
+              <Route
+                path="/admin/analytics"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminAnalytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminAnalytics />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Activity Logs */}
+              <Route
+                path="/admin/activities"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminActivities />
                   </ProtectedRoute>
                 }
               />

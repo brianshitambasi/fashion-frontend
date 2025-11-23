@@ -1,76 +1,58 @@
-// components/admin/AdminUsers.jsx
+// components/admin/AdminShops.jsx
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 const BACKEND_URL = "https://hair-salon-app-1.onrender.com";
 
-const AdminUsers = () => {
-  const [users, setUsers] = useState([]);
+const AdminShops = () => {
+  const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
 
   useEffect(() => {
-    fetchUsers();
-  }, [currentPage, searchTerm, roleFilter]);
+    fetchShops();
+  }, [currentPage, searchTerm]);
 
-  const fetchUsers = async () => {
+  const fetchShops = async () => {
     try {
       const token = localStorage.getItem("token");
       const params = {
         page: currentPage,
         limit: 10,
-        ...(searchTerm && { search: searchTerm }),
-        ...(roleFilter && { role: roleFilter })
+        ...(searchTerm && { search: searchTerm })
       };
 
-      const response = await axios.get(`${BACKEND_URL}/admin/users`, {
+      const response = await axios.get(`${BACKEND_URL}/admin/shops`, {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
 
-      setUsers(response.data.users);
+      setShops(response.data.shops);
       setTotalPages(response.data.totalPages);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching shops:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateUserStatus = async (userId, active) => {
+  const updateShopStatus = async (shopId, updates) => {
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
-        `${BACKEND_URL}/admin/users/${userId}/status`,
-        { active },
+        `${BACKEND_URL}/admin/shops/${shopId}/status`,
+        updates,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      fetchUsers(); // Refresh the list
-      alert(`User ${active ? "activated" : "deactivated"} successfully`);
+      fetchShops(); // Refresh the list
+      alert("Shop updated successfully");
     } catch (error) {
-      console.error("Error updating user status:", error);
-      alert("Failed to update user status");
-    }
-  };
-
-  const deleteUser = async (userId) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`${BACKEND_URL}/admin/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      fetchUsers(); // Refresh the list
-      alert("User deleted successfully");
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      alert("Failed to delete user");
+      console.error("Error updating shop:", error);
+      alert("Failed to update shop");
     }
   };
 
@@ -89,36 +71,24 @@ const AdminUsers = () => {
   return (
     <div className="container-fluid py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h2 fw-bold text-primary">User Management</h1>
+        <h1 className="h2 fw-bold text-primary">Shop Management</h1>
       </div>
 
       {/* Filters */}
       <div className="card shadow mb-4">
         <div className="card-body">
           <div className="row">
-            <div className="col-md-6">
+            <div className="col-md-10">
               <input
                 type="text"
                 className="form-control"
-                placeholder="Search users by name or email..."
+                placeholder="Search shops by name, location, or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="col-md-4">
-              <select
-                className="form-control"
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-              >
-                <option value="">All Roles</option>
-                <option value="customer">Customers</option>
-                <option value="shop">Shop Owners</option>
-                <option value="admin">Admins</option>
-              </select>
-            </div>
             <div className="col-md-2">
-              <button className="btn btn-outline-secondary w-100" onClick={fetchUsers}>
+              <button className="btn btn-outline-secondary w-100" onClick={fetchShops}>
                 <i className="bi bi-arrow-clockwise"></i>
               </button>
             </div>
@@ -126,62 +96,84 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Shops Table */}
       <div className="card shadow">
         <div className="card-header py-3">
-          <h6 className="m-0 font-weight-bold text-primary">All Users</h6>
+          <h6 className="m-0 font-weight-bold text-primary">All Shops</h6>
         </div>
         <div className="card-body">
           <div className="table-responsive">
             <table className="table table-bordered" width="100%" cellSpacing="0">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Role</th>
+                  <th>Shop Name</th>
+                  <th>Owner</th>
+                  <th>Location</th>
+                  <th>Services</th>
+                  <th>Rating</th>
                   <th>Status</th>
-                  <th>Joined</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr key={user._id}>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.phone}</td>
+                {shops.map((shop) => (
+                  <tr key={shop._id}>
                     <td>
-                      <span className={`badge ${
-                        user.role === 'admin' ? 'bg-danger' :
-                        user.role === 'shop' ? 'bg-info' :
-                        'bg-success'
-                      }`}>
-                        {user.role}
+                      <strong>{shop.name}</strong>
+                      {shop.featured && (
+                        <span className="badge bg-warning ms-2">Featured</span>
+                      )}
+                    </td>
+                    <td>
+                      <div>
+                        <div>{shop.owner?.name}</div>
+                        <small className="text-muted">{shop.owner?.email}</small>
+                      </div>
+                    </td>
+                    <td>{shop.location}</td>
+                    <td>
+                      <span className="badge bg-info">
+                        {shop.services?.length || 0} services
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${user.active ? 'bg-success' : 'bg-danger'}`}>
-                        {user.active ? 'Active' : 'Inactive'}
-                      </span>
+                      <div className="d-flex align-items-center">
+                        <span className="text-warning me-1">
+                          <i className="bi bi-star-fill"></i>
+                        </span>
+                        <span>{shop.rating || 'No ratings'}</span>
+                      </div>
                     </td>
-                    <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <div className="btn-group-vertical">
+                        <button
+                          className={`btn btn-sm ${shop.isVerified ? 'btn-success' : 'btn-warning'}`}
+                          onClick={() => updateShopStatus(shop._id, { isVerified: !shop.isVerified })}
+                        >
+                          {shop.isVerified ? 'Verified' : 'Verify'}
+                        </button>
+                        <button
+                          className={`btn btn-sm ${shop.featured ? 'btn-info' : 'btn-outline-info'}`}
+                          onClick={() => updateShopStatus(shop._id, { featured: !shop.featured })}
+                        >
+                          {shop.featured ? 'Featured' : 'Feature'}
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <div className="btn-group">
-                        <button
-                          className={`btn btn-sm ${user.active ? 'btn-warning' : 'btn-success'}`}
-                          onClick={() => updateUserStatus(user._id, !user.active)}
+                        <Link
+                          to={`/admin/shops/${shop._id}`}
+                          className="btn btn-sm btn-primary"
                         >
-                          {user.active ? 'Deactivate' : 'Activate'}
+                          View
+                        </Link>
+                        <button
+                          className={`btn btn-sm ${shop.isActive ? 'btn-warning' : 'btn-success'}`}
+                          onClick={() => updateShopStatus(shop._id, { isActive: !shop.isActive })}
+                        >
+                          {shop.isActive ? 'Deactivate' : 'Activate'}
                         </button>
-                        {user.role !== 'admin' && (
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => deleteUser(user._id)}
-                          >
-                            Delete
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -231,4 +223,4 @@ const AdminUsers = () => {
   );
 };
 
-export default AdminUsers;
+export default AdminShops;
