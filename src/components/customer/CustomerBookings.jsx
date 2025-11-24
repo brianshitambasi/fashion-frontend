@@ -233,7 +233,7 @@ const CustomerBookings = () => {
         console.log("Cart checkout successful:", checkoutData);
         
       } else {
-        // FIXED: Use the new individual booking route instead of adding to cart first
+        // Use the new individual booking route instead of adding to cart first
         const bookingResponse = await fetch(`${BACKEND_URL}/booking`, {
           method: "POST",
           headers: {
@@ -338,10 +338,12 @@ const CustomerBookings = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading user information...</p>
+          <div className="spinner-border text-primary" style={{width: '3rem', height: '3rem'}}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3 text-muted">Loading user information...</p>
         </div>
       </div>
     );
@@ -349,10 +351,12 @@ const CustomerBookings = () => {
 
   if (loading && shopId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading shop details...</p>
+          <div className="spinner-border text-pink" style={{width: '3rem', height: '3rem'}}>
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3 text-muted">Loading shop details...</p>
         </div>
       </div>
     );
@@ -360,15 +364,17 @@ const CustomerBookings = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
         <div className="text-center">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-            <div className="text-red-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-red-800 mb-2">Error Loading Shop</h2>
-            <p className="text-red-600 mb-4">{error}</p>
+          <div className="alert alert-danger p-4 rounded-3 shadow-sm max-w-md">
+            <div className="mb-3">
+              <i className="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
+            </div>
+            <h2 className="h4 fw-bold text-danger mb-3">Error Loading Shop</h2>
+            <p className="text-muted mb-4">{error}</p>
             <button
               onClick={() => navigate("/shops")}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              className="btn btn-primary px-4"
             >
               Back to Shops
             </button>
@@ -379,245 +385,449 @@ const CustomerBookings = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container-fluid py-4 bg-light">
       {/* User Info Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6 border border-blue-200">
-        <h1 className="text-2xl font-bold text-blue-800 mb-2">
-          Welcome, {user?.name || 'Customer'}!
-        </h1>
-        <p className="text-blue-600">You are booking as: {user?.email}</p>
-        <p className="text-blue-500 text-sm mt-1">Role: {user?.role}</p>
+      <div className="row justify-content-center mb-4">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm bg-gradient-primary text-white">
+            <div className="card-body p-4">
+              <div className="d-flex align-items-center">
+                <div className="flex-grow-1">
+                  <h1 className="h3 fw-bold mb-1">
+                    <i className="bi bi-person-circle me-2"></i>
+                    Welcome, {user?.name || 'Beautiful Customer'}!
+                  </h1>
+                  <p className="mb-0 opacity-75">
+                    <i className="bi bi-envelope me-1"></i>
+                    {user?.email}
+                  </p>
+                </div>
+                <div className="bg-white bg-opacity-20 px-3 py-2 rounded-pill">
+                  <small className="fw-semibold">
+                    <i className="bi bi-star me-1"></i>
+                    {user?.role}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Shop Information */}
-      {shop && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
-          <h1 className="text-3xl font-bold text-gray-800 mb-3">{shop.name}</h1>
-          <p className="text-gray-600 mb-2 flex items-center">
-            📍 {shop.location}
-          </p>
-          <p className="text-gray-700 mb-4">{shop.description}</p>
-          
-          {shop.image && (
-            <img 
-              src={shop.image} 
-              alt={shop.name}
-              className="w-full h-64 object-cover rounded-lg mb-4"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Available Services */}
-      {shop && shop.services && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Available Services</h2>
-          <div className="space-y-3">
-            {shop.services.map((service) => (
-              <div
-                key={service._id}
-                className={`flex justify-between items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  selectedServices.some((s) => s._id === service._id)
-                    ? "bg-green-50 border-green-500 shadow-md"
-                    : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm"
-                }`}
-                onClick={() => toggleService(service)}
-              >
-                <div className="flex-1">
-                  <strong className="text-lg text-gray-800">{service.serviceName}</strong>
-                  <p className="text-sm text-gray-500 mt-1">KSh {service.price.toLocaleString()}</p>
+      <div className="row justify-content-center">
+        <div className="col-12 col-lg-10 col-xl-8">
+          {/* Shop Information */}
+          {shop && (
+            <div className="card border-0 shadow-sm mb-4">
+              <div className="card-body p-4">
+                <div className="row align-items-center">
+                  {shop.image && (
+                    <div className="col-12 col-md-4 mb-3 mb-md-0">
+                      <img 
+                        src={shop.image} 
+                        alt={shop.name}
+                        className="img-fluid rounded-3 shadow-sm"
+                        style={{height: '200px', width: '100%', objectFit: 'cover'}}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className={shop.image ? "col-12 col-md-8" : "col-12"}>
+                    <h1 className="h2 fw-bold text-dark mb-2">{shop.name}</h1>
+                    <p className="text-muted mb-3">
+                      <i className="bi bi-geo-alt-fill me-2 text-primary"></i>
+                      {shop.location}
+                    </p>
+                    <p className="text-dark mb-0">{shop.description}</p>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(service);
-                    }}
-                    className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
-                  >
-                    Add to Cart
-                  </button>
+              </div>
+            </div>
+          )}
+
+          {/* Available Services */}
+          {shop && shop.services && (
+            <div className="card border-0 shadow-sm mb-4">
+              <div className="card-header bg-white border-0 py-3">
+                <h2 className="h4 fw-bold text-dark mb-0">
+                  <i className="bi bi-scissors me-2 text-pink"></i>
+                  Available Beauty Services
+                </h2>
+              </div>
+              <div className="card-body p-0">
+                <div className="list-group list-group-flush">
+                  {shop.services.map((service) => (
+                    <div
+                      key={service._id}
+                      className={`list-group-item list-group-item-action border-0 py-3 ${
+                        selectedServices.some((s) => s._id === service._id)
+                          ? "bg-pink-light border-start-4 border-pink"
+                          : "bg-white"
+                      }`}
+                      onClick={() => toggleService(service)}
+                      style={{cursor: 'pointer'}}
+                    >
+                      <div className="d-flex align-items-center justify-content-between">
+                        <div className="d-flex align-items-center">
+                          <div className={`rounded-circle p-2 me-3 ${
+                            selectedServices.some((s) => s._id === service._id)
+                              ? "bg-pink text-white"
+                              : "bg-light text-muted"
+                          }`}>
+                            <i className="bi bi-check-lg"></i>
+                          </div>
+                          <div>
+                            <h5 className="mb-1 fw-semibold">{service.serviceName}</h5>
+                            <p className="text-muted mb-0">
+                              KSh {service.price.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToCart(service);
+                            }}
+                            className="btn btn-outline-orange btn-sm"
+                          >
+                            <i className="bi bi-cart-plus me-1"></i>
+                            Add to Cart
+                          </button>
+                          <div className="form-check">
+                            <input
+                              type="checkbox"
+                              checked={selectedServices.some((s) => s._id === service._id)}
+                              readOnly
+                              className="form-check-input"
+                              style={{width: '1.2em', height: '1.2em'}}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Selected Services Summary */}
+          {selectedServices.length > 0 && (
+            <div className="card border-warning border-2 mb-4">
+              <div className="card-header bg-warning bg-opacity-10 border-warning">
+                <h3 className="h5 fw-bold text-warning-dark mb-0">
+                  <i className="bi bi-clipboard-check me-2"></i>
+                  Selected Services for Booking
+                </h3>
+              </div>
+              <div className="card-body">
+                <div className="row">
+                  <div className="col-12 col-md-8">
+                    <ul className="list-unstyled mb-0">
+                      {selectedServices.map(service => (
+                        <li key={service._id} className="mb-2 d-flex align-items-center">
+                          <i className="bi bi-check-circle-fill text-success me-2"></i>
+                          <span className="fw-semibold">{service.serviceName}</span>
+                          <span className="text-muted ms-2">
+                            - KSh {service.price.toLocaleString()}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="col-12 col-md-4 text-md-end">
+                    <p className="h5 fw-bold text-warning-dark mb-0">
+                      Total: KSh {totalCost.toLocaleString()}
+                    </p>
+                    <small className="text-muted">
+                      {selectedServices.length} service(s) selected
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Date & Time Selection */}
+          <div className="card border-0 shadow-sm mb-4">
+            <div className="card-body p-4">
+              <h3 className="h5 fw-bold text-dark mb-3">
+                <i className="bi bi-calendar2-event me-2 text-primary"></i>
+                Choose Your Preferred Date & Time
+              </h3>
+              <div className="row">
+                <div className="col-12 col-md-6">
                   <input
-                    type="checkbox"
-                    checked={selectedServices.some((s) => s._id === service._id)}
-                    readOnly
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    type="datetime-local"
+                    value={dateTime}
+                    onChange={(e) => setDateTime(e.target.value)}
+                    className="form-control form-control-lg"
+                    min={new Date().toISOString().slice(0, 16)}
                   />
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Selected Services Summary */}
-      {selectedServices.length > 0 && (
-        <div className="bg-yellow-50 p-6 rounded-lg mb-6 border border-yellow-200">
-          <h3 className="text-xl font-semibold mb-3 text-yellow-800">Selected Services for Booking</h3>
-          <div>
-            <p className="font-medium text-yellow-700">Services:</p>
-            <ul className="list-disc list-inside mb-3 text-yellow-600">
-              {selectedServices.map(service => (
-                <li key={service._id} className="mb-1">
-                  {service.serviceName} - KSh {service.price.toLocaleString()}
-                </li>
-              ))}
-            </ul>
-            <p className="font-bold text-lg text-yellow-800">
-              Total: KSh {totalCost.toLocaleString()}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Date & Time Selection */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
-        <label className="block text-gray-700 mb-3 font-medium text-lg">
-          📅 Choose Date & Time
-        </label>
-        <input
-          type="datetime-local"
-          value={dateTime}
-          onChange={(e) => setDateTime(e.target.value)}
-          className="border-2 border-gray-300 p-3 rounded-lg w-full md:w-1/2 text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          min={new Date().toISOString().slice(0, 16)}
-        />
-      </div>
-
-      {/* Cart Items */}
-      {cartItems.length > 0 && (
-        <div className="bg-purple-50 p-6 rounded-lg mb-6 border border-purple-200">
-          <h3 className="text-xl font-semibold mb-3 text-purple-800">
-            Cart Items ({cartItems.length})
-            <span className="text-sm font-normal ml-2">
-              (Go to <a href="/customer/cart" className="underline">Cart</a> to manage)
-            </span>
-          </h3>
-          <ul className="space-y-2">
-            {cartItems.map((item, index) => (
-              <li key={index} className="text-purple-700">
-                • {item.serviceName} - KSh {item.price.toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Book Now Button */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-800">
-              Total: <span className="text-green-600 text-2xl">KSh {totalCost.toLocaleString()}</span>
-            </h3>
-            <p className="text-sm text-gray-600">
-              {selectedServices.length} service(s) selected for booking
-            </p>
-          </div>
-          <button
-            className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 text-lg font-semibold transition-colors shadow-md hover:shadow-lg w-full md:w-auto"
-            onClick={handleBooking}
-            disabled={submitting || !selectedServices.length || !dateTime || !isAuthenticated}
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Processing...
-              </span>
-            ) : (
-              "✅ Book Now"
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* My Bookings Section */}
-      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-        <h2 className="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">My Bookings</h2>
-        {bookings.length === 0 ? (
-          <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500 text-lg mb-2">No bookings yet.</p>
-            <p className="text-gray-400">Book a service above to see your appointments here.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {bookings.map((booking) => (
-              <div
-                key={booking._id}
-                className="p-4 border-2 rounded-lg bg-white shadow-sm border-gray-100 hover:shadow-md transition-shadow"
-              >
-                <div className="flex flex-col md:flex-row justify-between items-start space-y-4 md:space-y-0">
-                  <div className="flex-1">
-                    <p className="font-bold text-lg text-gray-800 mb-2">{booking.shop?.name}</p>
-                    <div className="space-y-1 mb-3">
-                      {booking.services?.map((service, index) => (
-                        <div key={index} className="text-gray-700 flex items-center">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                          {service.serviceName} - KSh {service.price.toLocaleString()}
+          {/* Cart Items */}
+          {cartItems.length > 0 && (
+            <div className="card border-purple border-2 mb-4">
+              <div className="card-header bg-purple bg-opacity-10 border-purple">
+                <h3 className="h5 fw-bold text-purple mb-0">
+                  <i className="bi bi-cart3 me-2"></i>
+                  Your Cart Items ({cartItems.length})
+                </h3>
+              </div>
+              <div className="card-body">
+                <div className="row">
+                  <div className="col-12 col-md-8">
+                    <div className="row">
+                      {cartItems.map((item, index) => (
+                        <div key={index} className="col-12 col-sm-6 mb-2">
+                          <div className="d-flex align-items-center">
+                            <i className="bi bi-bag-check text-purple me-2"></i>
+                            <span className="fw-semibold">{item.serviceName}</span>
+                            <span className="text-muted ms-2">
+                              - KSh {item.price.toLocaleString()}
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>
-                    <p className="text-gray-600 mb-1">
-                      <span className="font-medium">📅 Date:</span> {new Date(booking.dateTime).toLocaleDateString()}
-                    </p>
-                    <p className="text-gray-600 mb-2">
-                      <span className="font-medium">🕒 Time:</span> {new Date(booking.dateTime).toLocaleTimeString()}
-                    </p>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                      booking.status === 'confirmed' ? 'bg-green-100 text-green-800 border border-green-200' :
-                      booking.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-200' :
-                      booking.status === 'completed' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                      'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                    }`}>
-                      {booking.status?.toUpperCase()}
-                    </span>
-                    <p className="text-lg font-bold mt-2 text-green-700">
-                      Total: KSh {booking.totalPrice?.toLocaleString()}
-                    </p>
                   </div>
-                  <div className="flex flex-col space-y-2 w-full md:w-auto">
-                    {booking.status === "pending" && (
-                      <>
-                        <button
-                          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm font-medium transition-colors"
-                          onClick={() => handleCancelBooking(booking._id)}
-                        >
-                          Cancel Booking
-                        </button>
-                        <button
-                          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm font-medium transition-colors"
-                          onClick={() => handleDeleteBooking(booking._id)}
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                    {booking.status === "confirmed" && (
-                      <button
-                        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm font-medium transition-colors"
-                        onClick={() => handleCancelBooking(booking._id)}
-                      >
-                        Cancel Booking
-                      </button>
-                    )}
-                    {(booking.status === "completed" || booking.status === "cancelled") && (
-                      <button
-                        className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm font-medium transition-colors"
-                        onClick={() => handleDeleteBooking(booking._id)}
-                      >
-                        Delete
-                      </button>
-                    )}
+                  <div className="col-12 col-md-4 text-md-end">
+                    <a href="/customer/cart" className="btn btn-purple btn-sm">
+                      <i className="bi bi-arrow-right me-1"></i>
+                      Manage Cart
+                    </a>
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* Book Now Button */}
+          <div className="card border-success border-2 mb-5">
+            <div className="card-body p-4">
+              <div className="row align-items-center">
+                <div className="col-12 col-md-6 mb-3 mb-md-0">
+                  <h3 className="h4 fw-bold text-success mb-1">
+                    Total Amount
+                  </h3>
+                  <p className="h3 fw-bold text-dark mb-0">
+                    KSh {totalCost.toLocaleString()}
+                  </p>
+                  <small className="text-muted">
+                    {selectedServices.length} beautiful service(s) selected
+                  </small>
+                </div>
+                <div className="col-12 col-md-6 text-md-end">
+                  <button
+                    className="btn btn-success btn-lg px-5 py-3 fw-semibold"
+                    onClick={handleBooking}
+                    disabled={submitting || !selectedServices.length || !dateTime || !isAuthenticated}
+                  >
+                    {submitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Processing Your Beauty Appointment...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-calendar2-check me-2"></i>
+                        Book Now & Get Beautiful
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* My Bookings Section */}
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white border-0 py-3">
+              <h2 className="h4 fw-bold text-dark mb-0">
+                <i className="bi bi-clock-history me-2 text-primary"></i>
+                My Beauty Appointments
+              </h2>
+            </div>
+            <div className="card-body">
+              {bookings.length === 0 ? (
+                <div className="text-center py-5">
+                  <i className="bi bi-calendar-x text-muted fs-1 mb-3"></i>
+                  <p className="text-muted mb-2">No appointments booked yet.</p>
+                  <p className="text-muted small">
+                    Select services above to schedule your beauty transformation!
+                  </p>
+                </div>
+              ) : (
+                <div className="row g-3">
+                  {bookings.map((booking) => (
+                    <div key={booking._id} className="col-12">
+                      <div className="card border-0 shadow-sm h-100">
+                        <div className="card-body">
+                          <div className="row align-items-center">
+                            <div className="col-12 col-md-8">
+                              <h5 className="fw-bold text-dark mb-2">
+                                {booking.shop?.name}
+                              </h5>
+                              <div className="mb-3">
+                                {booking.services?.map((service, index) => (
+                                  <span key={index} className="badge bg-pink-light text-pink me-2 mb-2">
+                                    <i className="bi bi-scissors me-1"></i>
+                                    {service.serviceName} - KSh {service.price.toLocaleString()}
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="d-flex flex-wrap gap-3 text-muted">
+                                <small>
+                                  <i className="bi bi-calendar me-1"></i>
+                                  {new Date(booking.dateTime).toLocaleDateString()}
+                                </small>
+                                <small>
+                                  <i className="bi bi-clock me-1"></i>
+                                  {new Date(booking.dateTime).toLocaleTimeString()}
+                                </small>
+                                <span className={`badge ${
+                                  booking.status === 'confirmed' ? 'bg-success' :
+                                  booking.status === 'cancelled' ? 'bg-danger' :
+                                  booking.status === 'completed' ? 'bg-primary' :
+                                  'bg-warning'
+                                }`}>
+                                  {booking.status?.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="h5 fw-bold text-success mt-2 mb-0">
+                                Total: KSh {booking.totalPrice?.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                              <div className="d-flex flex-column gap-2">
+                                {booking.status === "pending" && (
+                                  <>
+                                    <button
+                                      className="btn btn-outline-danger btn-sm"
+                                      onClick={() => handleCancelBooking(booking._id)}
+                                    >
+                                      <i className="bi bi-x-circle me-1"></i>
+                                      Cancel
+                                    </button>
+                                    <button
+                                      className="btn btn-outline-dark btn-sm"
+                                      onClick={() => handleDeleteBooking(booking._id)}
+                                    >
+                                      <i className="bi bi-trash me-1"></i>
+                                      Delete
+                                    </button>
+                                  </>
+                                )}
+                                {booking.status === "confirmed" && (
+                                  <button
+                                    className="btn btn-outline-danger"
+                                    onClick={() => handleCancelBooking(booking._id)}
+                                  >
+                                    <i className="bi bi-x-circle me-1"></i>
+                                    Cancel Booking
+                                  </button>
+                                )}
+                                {(booking.status === "completed" || booking.status === "cancelled") && (
+                                  <button
+                                    className="btn btn-outline-dark btn-sm"
+                                    onClick={() => handleDeleteBooking(booking._id)}
+                                  >
+                                    <i className="bi bi-trash me-1"></i>
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Add Bootstrap Icons */}
+      <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" 
+        rel="stylesheet" 
+      />
+
+      {/* Custom Beauty Styles */}
+      <style jsx>{`
+        .bg-gradient-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .text-pink {
+          color: #e83e8c !important;
+        }
+        .bg-pink {
+          background-color: #e83e8c !important;
+        }
+        .bg-pink-light {
+          background-color: #fce4ec !important;
+        }
+        .text-warning-dark {
+          color: #856404 !important;
+        }
+        .border-pink {
+          border-color: #e83e8c !important;
+        }
+        .btn-pink {
+          background-color: #e83e8c;
+          border-color: #e83e8c;
+          color: white;
+        }
+        .btn-pink:hover {
+          background-color: #d81b60;
+          border-color: #d81b60;
+          color: white;
+        }
+        .btn-outline-orange {
+          color: #fd7e14;
+          border-color: #fd7e14;
+        }
+        .btn-outline-orange:hover {
+          background-color: #fd7e14;
+          border-color: #fd7e14;
+          color: white;
+        }
+        .border-purple {
+          border-color: #6f42c1 !important;
+        }
+        .bg-purple {
+          background-color: #6f42c1 !important;
+        }
+        .text-purple {
+          color: #6f42c1 !important;
+        }
+        .bg-purple-light {
+          background-color: #e9ecef !important;
+        }
+        .btn-purple {
+          background-color: #6f42c1;
+          border-color: #6f42c1;
+          color: white;
+        }
+        .btn-purple:hover {
+          background-color: #5a2d91;
+          border-color: #5a2d91;
+          color: white;
+        }
+        .spinner-border.text-pink {
+          color: #e83e8c !important;
+        }
+      `}</style>
     </div>
   );
 };

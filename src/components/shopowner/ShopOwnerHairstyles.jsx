@@ -19,12 +19,9 @@ const ShopOwnerHairstyles = () => {
       const token = localStorage.getItem('token');
       
       // First, get the shop owner's shops
-      const shopsResponse = await axios.get(
-        'https://hair-salon-app-1.onrender.com/shopowner/shops',
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const shopsResponse = await axios.get('https://hair-salon-app-1.onrender.com/shop/my', {
+  headers: { Authorization: `Bearer ${token}` }
+});
 
       if (shopsResponse.data.length === 0) {
         setError('You need to create a shop first to manage hairstyles');

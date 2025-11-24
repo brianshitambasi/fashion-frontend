@@ -2,20 +2,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import './Home.css'; // We'll create this CSS file for custom styles
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth();
 
   const stats = [
-    { number: '50+', label: 'Professional Salons' },
-    { number: '1000+', label: 'Happy Customers' },
-    { number: '200+', label: 'Trending Styles' },
-    { number: '24/7', label: 'Customer Support' }
+    { number: '50+', label: 'Professional Salons', icon: 'bi-shop' },
+    { number: '1000+', label: 'Happy Customers', icon: 'bi-emoji-smile' },
+    { number: '200+', label: 'Trending Styles', icon: 'bi-gem' },
+    { number: '24/7', label: 'Customer Support', icon: 'bi-headset' }
   ];
 
   const features = [
     {
-      icon: 'bi-search',
+      icon: 'bi-search-heart',
       title: 'Find Best Salons',
       description: 'Discover top-rated hair salons in Nairobi with real reviews and ratings from verified customers.'
     },
@@ -35,7 +36,7 @@ const Home = () => {
       description: 'Share your experience and help others find the perfect salon for their needs.'
     },
     {
-      icon: 'bi-credit-card',
+      icon: 'bi-shield-check',
       title: 'Secure Payments',
       description: 'Pay safely with M-Pesa integration and get instant booking confirmation.'
     },
@@ -55,51 +56,109 @@ const Home = () => {
     { name: 'Makeup', icon: 'bi-eyedropper' }
   ];
 
+  const testimonials = [
+    {
+      name: 'Sarah M.',
+      location: 'Westlands, Nairobi',
+      rating: 5,
+      text: '"I found the perfect salon for my wedding hairstyle! The booking was so easy and the payment was secure."',
+      image: '👩'
+    },
+    {
+      name: 'John K.',
+      location: 'Kilimani, Nairobi',
+      rating: 5,
+      text: '"As a busy professional, this platform saves me so much time. I can book appointments during my lunch break!"',
+      image: '👨'
+    },
+    {
+      name: 'Grace W.',
+      location: 'Karen, Nairobi',
+      rating: 4.5,
+      text: '"The M-Pesa integration is seamless. I love that I can pay instantly and get immediate confirmation."',
+      image: '👩'
+    }
+  ];
+
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <i 
+        key={i} 
+        className={`bi ${i < rating ? 'bi-star-fill' : 'bi-star'} ${i < Math.floor(rating) && i >= rating ? 'bi-star-half' : ''}`}
+      ></i>
+    ));
+  };
+
   return (
     <>
       {/* Hero Section */}
-      <section className="hero-section bg-primary text-white py-5">
-        <div className="container py-5">
-          <div className="row align-items-center">
+      <section className="hero-section">
+        <div className="container">
+          <div className="row align-items-center min-vh-80">
             <div className="col-lg-6">
-              <h1 className="display-4 fw-bold mb-4">
-                Book Your Perfect <span className="text-warning">Hair Style</span> in Nairobi
-              </h1>
-              <p className="lead mb-4">
-                Discover the best hair salons, browse trending styles, and book appointments instantly. 
-                Your perfect look is just a click away with secure M-Pesa payments.
-              </p>
-              <div className="d-flex flex-wrap gap-3">
-                <Link to="/shops" className="btn btn-light btn-lg px-4 py-2">
-                  <i className="bi bi-search me-2"></i>
-                  Explore Salons
-                </Link>
-                {!isAuthenticated && (
-                  <Link to="/register" className="btn btn-outline-light btn-lg px-4 py-2">
-                    <i className="bi bi-person-plus me-2"></i>
-                    Join Now
+              <div className="hero-content">
+                <span className="badge bg-warning text-dark mb-3">
+                  <i className="bi bi-award me-2"></i>
+                  Nairobi's #1 Salon Booking Platform
+                </span>
+                <h1 className="hero-title">
+                  Book Your Perfect <span className="text-gradient">Hair Style</span> in Nairobi
+                </h1>
+                <p className="hero-subtitle">
+                  Discover the best hair salons, browse trending styles, and book appointments instantly. 
+                  Your perfect look is just a click away with secure M-Pesa payments.
+                </p>
+                <div className="hero-buttons">
+                  <Link to="/shops" className="btn btn-primary btn-lg">
+                    <i className="bi bi-search me-2"></i>
+                    Explore Salons
                   </Link>
-                )}
-                {isAuthenticated && user?.role === 'customer' && (
-                  <Link to="/customer/dashboard" className="btn btn-warning btn-lg px-4 py-2">
-                    <i className="bi bi-speedometer2 me-2"></i>
-                    My Dashboard
-                  </Link>
-                )}
-                {isAuthenticated && user?.role === 'shopowner' && (
-                  <Link to="/shopowner/dashboard" className="btn btn-warning btn-lg px-4 py-2">
-                    <i className="bi bi-speedometer2 me-2"></i>
-                    Salon Dashboard
-                  </Link>
-                )}
+                  {!isAuthenticated && (
+                    <Link to="/register" className="btn btn-outline-light btn-lg">
+                      <i className="bi bi-person-plus me-2"></i>
+                      Join Now
+                    </Link>
+                  )}
+                  {isAuthenticated && (
+                    <Link 
+                      to={user?.role === 'customer' ? "/customer/dashboard" : "/shopowner/dashboard"} 
+                      className="btn btn-warning btn-lg"
+                    >
+                      <i className="bi bi-speedometer2 me-2"></i>
+                      {user?.role === 'customer' ? 'My Dashboard' : 'Salon Dashboard'}
+                    </Link>
+                  )}
+                </div>
+                
+                {/* Trust Indicators */}
+                <div className="trust-indicators mt-4">
+                  <div className="d-flex align-items-center text-white-50">
+                    <i className="bi bi-shield-check me-2"></i>
+                    <small>Secure M-Pesa Payments • 1000+ Happy Customers • Instant Booking</small>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="col-lg-6">
-              <div className="text-center">
-                <div className="hero-image bg-light rounded-3 p-5 shadow">
-                  <i className="bi bi-scissors display-1 text-primary mb-3"></i>
-                  <h3 className="text-dark">Nairobi's Premier Salon Booking Platform</h3>
-                  <p className="text-muted">Beauty and convenience combined</p>
+              <div className="hero-visual">
+                <div className="floating-card card-1">
+                  <i className="bi bi-scissors"></i>
+                  <span>Hair Styling</span>
+                </div>
+                <div className="floating-card card-2">
+                  <i className="bi bi-palette"></i>
+                  <span>Hair Color</span>
+                </div>
+                <div className="floating-card card-3">
+                  <i className="bi bi-gem"></i>
+                  <span>Premium</span>
+                </div>
+                <div className="main-hero-image">
+                  <div className="hero-avatar">
+                    <i className="bi bi-star-fill"></i>
+                  </div>
+                  <h4>Nairobi's Premier Salon Booking</h4>
+                  <p>Beauty and convenience combined</p>
                 </div>
               </div>
             </div>
@@ -108,14 +167,17 @@ const Home = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-5 bg-light">
+      <section className="stats-section py-5">
         <div className="container">
           <div className="row g-4">
             {stats.map((stat, index) => (
               <div key={index} className="col-6 col-md-3">
-                <div className="text-center">
-                  <h3 className="fw-bold text-primary">{stat.number}</h3>
-                  <p className="text-muted mb-0">{stat.label}</p>
+                <div className="stat-card text-center">
+                  <div className="stat-icon">
+                    <i className={`bi ${stat.icon}`}></i>
+                  </div>
+                  <h3 className="stat-number">{stat.number}</h3>
+                  <p className="stat-label">{stat.label}</p>
                 </div>
               </div>
             ))}
@@ -124,23 +186,21 @@ const Home = () => {
       </section>
 
       {/* Popular Services */}
-      <section className="py-5">
+      <section className="services-section py-5">
         <div className="container">
-          <div className="row text-center mb-5">
-            <div className="col">
-              <h2 className="fw-bold">Popular Services</h2>
-              <p className="text-muted">Discover our most booked hair services</p>
-            </div>
+          <div className="section-header text-center mb-5">
+            <h2>Popular Services</h2>
+            <p className="section-subtitle">Discover our most booked hair services in Nairobi</p>
           </div>
           
           <div className="row g-4">
             {popularServices.map((service, index) => (
               <div key={index} className="col-md-4 col-lg-2">
-                <div className="card border-0 text-center card-hover">
-                  <div className="card-body">
-                    <i className={`bi ${service.icon} display-6 text-primary mb-3`}></i>
-                    <h6 className="card-title">{service.name}</h6>
+                <div className="service-card text-center">
+                  <div className="service-icon">
+                    <i className={`bi ${service.icon}`}></i>
                   </div>
+                  <h6 className="service-name">{service.name}</h6>
                 </div>
               </div>
             ))}
@@ -149,26 +209,22 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-5 bg-light">
+      <section className="features-section py-5">
         <div className="container">
-          <div className="row text-center mb-5">
-            <div className="col">
-              <h2 className="fw-bold">Why Choose Looks Nairobi?</h2>
-              <p className="text-muted lead">The modern way to book hair services in Nairobi</p>
-            </div>
+          <div className="section-header text-center mb-5">
+            <h2>Why Choose Looks Nairobi?</h2>
+            <p className="section-subtitle">The modern way to book hair services in Nairobi</p>
           </div>
           
           <div className="row g-4">
             {features.map((feature, index) => (
               <div key={index} className="col-md-6 col-lg-4">
-                <div className="card border-0 shadow-sm h-100 feature-card">
-                  <div className="card-body text-center p-4">
-                    <div className="feature-icon bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
-                      <i className={`bi ${feature.icon} fs-1 text-primary`}></i>
-                    </div>
-                    <h5 className="fw-bold">{feature.title}</h5>
-                    <p className="text-muted">{feature.description}</p>
+                <div className="feature-card">
+                  <div className="feature-icon-container">
+                    <i className={`bi ${feature.icon}`}></i>
                   </div>
+                  <h5>{feature.title}</h5>
+                  <p>{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -177,41 +233,42 @@ const Home = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-5">
+      <section className="process-section py-5">
         <div className="container">
-          <div className="row text-center mb-5">
-            <div className="col">
-              <h2 className="fw-bold">How It Works</h2>
-              <p className="text-muted">Get your perfect style in 3 easy steps</p>
-            </div>
+          <div className="section-header text-center mb-5">
+            <h2>How It Works</h2>
+            <p className="section-subtitle">Get your perfect style in 3 easy steps</p>
           </div>
           
-          <div className="row g-4">
-            <div className="col-md-4">
-              <div className="text-center">
-                <div className="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">
-                  1
+          <div className="process-steps">
+            <div className="process-line"></div>
+            <div className="row g-4">
+              <div className="col-md-4">
+                <div className="process-step text-center">
+                  <div className="step-number">1</div>
+                  <div className="step-content">
+                    <h5>Find a Salon</h5>
+                    <p>Browse through our curated list of top-rated salons in Nairobi</p>
+                  </div>
                 </div>
-                <h5>Find a Salon</h5>
-                <p className="text-muted">Browse through our curated list of top-rated salons in Nairobi</p>
               </div>
-            </div>
-            <div className="col-md-4">
-              <div className="text-center">
-                <div className="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">
-                  2
+              <div className="col-md-4">
+                <div className="process-step text-center">
+                  <div className="step-number">2</div>
+                  <div className="step-content">
+                    <h5>Book & Pay</h5>
+                    <p>Choose your service, select a time slot, and pay securely with M-Pesa</p>
+                  </div>
                 </div>
-                <h5>Book & Pay</h5>
-                <p className="text-muted">Choose your service, select a time slot, and pay securely with M-Pesa</p>
               </div>
-            </div>
-            <div className="col-md-4">
-              <div className="text-center">
-                <div className="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">
-                  3
+              <div className="col-md-4">
+                <div className="process-step text-center">
+                  <div className="step-number">3</div>
+                  <div className="step-content">
+                    <h5>Get Styled</h5>
+                    <p>Visit the salon at your scheduled time and enjoy your new look</p>
+                  </div>
                 </div>
-                <h5>Get Styled</h5>
-                <p className="text-muted">Visit the salon at your scheduled time and enjoy your new look</p>
               </div>
             </div>
           </div>
@@ -219,84 +276,55 @@ const Home = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-5 bg-primary text-white">
+      <section className="testimonials-section py-5">
         <div className="container">
-          <div className="row text-center mb-5">
-            <div className="col">
-              <h2 className="fw-bold">What Our Customers Say</h2>
-              <p className="opacity-75">Real experiences from our happy customers</p>
-            </div>
+          <div className="section-header text-center mb-5">
+            <h2>What Our Customers Say</h2>
+            <p className="section-subtitle">Real experiences from our happy customers</p>
           </div>
           
           <div className="row g-4">
-            <div className="col-md-4">
-              <div className="card border-0 bg-dark bg-opacity-25">
-                <div className="card-body text-center">
-                  <div className="text-warning mb-3">
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="col-md-4">
+                <div className="testimonial-card">
+                  <div className="testimonial-header">
+                    <div className="customer-avatar">
+                      {testimonial.image}
+                    </div>
+                    <div className="customer-info">
+                      <h6>{testimonial.name}</h6>
+                      <small>{testimonial.location}</small>
+                    </div>
                   </div>
-                  <p className="card-text">"I found the perfect salon for my wedding hairstyle! The booking was so easy and the payment was secure."</p>
-                  <h6 className="card-title mb-1">Sarah M.</h6>
-                  <small className="opacity-75">Westlands, Nairobi</small>
+                  <div className="testimonial-rating text-warning">
+                    {renderStars(testimonial.rating)}
+                  </div>
+                  <p className="testimonial-text">{testimonial.text}</p>
                 </div>
               </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card border-0 bg-dark bg-opacity-25">
-                <div className="card-body text-center">
-                  <div className="text-warning mb-3">
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                  </div>
-                  <p className="card-text">"As a busy professional, this platform saves me so much time. I can book appointments during my lunch break!"</p>
-                  <h6 className="card-title mb-1">John K.</h6>
-                  <small className="opacity-75">Kilimani, Nairobi</small>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="card border-0 bg-dark bg-opacity-25">
-                <div className="card-body text-center">
-                  <div className="text-warning mb-3">
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-fill"></i>
-                    <i className="bi bi-star-half"></i>
-                  </div>
-                  <p className="card-text">"The M-Pesa integration is seamless. I love that I can pay instantly and get immediate confirmation."</p>
-                  <h6 className="card-title mb-1">Grace W.</h6>
-                  <small className="opacity-75">Karen, Nairobi</small>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-5 bg-light">
+      <section className="cta-section py-5">
         <div className="container text-center">
-          <h3 className="fw-bold mb-3">Ready to Transform Your Look?</h3>
-          <p className="text-muted mb-4">Join thousands of satisfied customers in Nairobi who trust us for their beauty needs</p>
-          <div className="d-flex justify-content-center gap-3 flex-wrap">
-            <Link to="/shops" className="btn btn-primary btn-lg px-5">
-              <i className="bi bi-search me-2"></i>
-              Find Salons
-            </Link>
-            {!isAuthenticated && (
-              <Link to="/register" className="btn btn-outline-primary btn-lg px-5">
-                <i className="bi bi-person-plus me-2"></i>
-                Sign Up Free
+          <div className="cta-content">
+            <h2>Ready to Transform Your Look?</h2>
+            <p>Join thousands of satisfied customers in Nairobi who trust us for their beauty needs</p>
+            <div className="cta-buttons">
+              <Link to="/shops" className="btn btn-primary btn-lg">
+                <i className="bi bi-search me-2"></i>
+                Find Salons
               </Link>
-            )}
+              {!isAuthenticated && (
+                <Link to="/register" className="btn btn-outline-primary btn-lg">
+                  <i className="bi bi-person-plus me-2"></i>
+                  Sign Up Free
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </section>
