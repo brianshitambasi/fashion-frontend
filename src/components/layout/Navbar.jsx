@@ -31,10 +31,11 @@ function Navbar() {
           {/* Center Links */}
           <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
             <li className="nav-item">
-              <NavLink 
-                className="nav-link px-2 px-lg-3" 
+              <NavLink
                 to="/"
-                activeClassName="active"
+                className={({ isActive }) =>
+                  `nav-link px-2 px-lg-3 ${isActive ? "active" : ""}`
+                }
               >
                 <i className="bi bi-house d-lg-none me-2"></i>
                 Home
@@ -45,20 +46,22 @@ function Navbar() {
             {user && (
               <>
                 <li className="nav-item">
-                  <NavLink 
-                    className="nav-link px-2 px-lg-3" 
+                  <NavLink
                     to="/shops"
-                    activeClassName="active"
+                    className={({ isActive }) =>
+                      `nav-link px-2 px-lg-3 ${isActive ? "active" : ""}`
+                    }
                   >
                     <i className="bi bi-shop d-lg-none me-2"></i>
                     Salons
                   </NavLink>
                 </li>
                 <li className="nav-item">
-                  <NavLink 
-                    className="nav-link px-2 px-lg-3" 
+                  <NavLink
                     to="/hairstyles"
-                    activeClassName="active"
+                    className={({ isActive }) =>
+                      `nav-link px-2 px-lg-3 ${isActive ? "active" : ""}`
+                    }
                   >
                     <i className="bi bi-scissors d-lg-none me-2"></i>
                     Hairstyles
@@ -68,20 +71,22 @@ function Navbar() {
             )}
 
             <li className="nav-item">
-              <NavLink 
-                className="nav-link px-2 px-lg-3" 
+              <NavLink
                 to="/about"
-                activeClassName="active"
+                className={({ isActive }) =>
+                  `nav-link px-2 px-lg-3 ${isActive ? "active" : ""}`
+                }
               >
                 <i className="bi bi-info-circle d-lg-none me-2"></i>
                 About
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink 
-                className="nav-link px-2 px-lg-3" 
+              <NavLink
                 to="/contact"
-                activeClassName="active"
+                className={({ isActive }) =>
+                  `nav-link px-2 px-lg-3 ${isActive ? "active" : ""}`
+                }
               >
                 <i className="bi bi-telephone d-lg-none me-2"></i>
                 Contact
@@ -102,44 +107,39 @@ function Navbar() {
                   </span>
                 </div>
                 <div className="d-flex gap-2">
-                  <Link 
-                    to={user?.role === 'customer' ? "/customer/dashboard" : "/shopowner/dashboard"} 
+                  <Link
+                    to={user?.role === "customer" ? "/customer/dashboard" : "/shopowner/dashboard"}
                     className="btn btn-outline-primary btn-sm flex-fill"
                   >
                     <i className="bi bi-speedometer2 me-1"></i>
                     <span className="d-none d-lg-inline">Dashboard</span>
                   </Link>
-                  <button 
-                    onClick={logout} 
-                    className="btn btn-outline-dark btn-sm flex-fill"
-                  >
+                  <button onClick={logout} className="btn btn-outline-dark btn-sm flex-fill">
                     <i className="bi bi-box-arrow-right me-1"></i>
                     <span className="d-none d-lg-inline">Logout</span>
                   </button>
                 </div>
               </>
             ) : (
-              <>
-                <div className="d-flex gap-2 w-100">
-                  <Link to="/login" className="btn btn-outline-dark btn-sm flex-fill">
-                    <i className="bi bi-box-arrow-in-right me-1"></i>
-                    Login
-                  </Link>
-                  <Link to="/register" className="btn btn-pink btn-sm flex-fill">
-                    <i className="bi bi-person-plus me-1"></i>
-                    Register
-                  </Link>
-                </div>
-              </>
+              <div className="d-flex gap-2 w-100">
+                <Link to="/login" className="btn btn-outline-dark btn-sm flex-fill">
+                  <i className="bi bi-box-arrow-in-right me-1"></i>
+                  Login
+                </Link>
+                <Link to="/register" className="btn btn-pink btn-sm flex-fill">
+                  <i className="bi bi-person-plus me-1"></i>
+                  Register
+                </Link>
+              </div>
             )}
           </div>
         </div>
       </div>
 
       {/* Bootstrap Icons */}
-      <link 
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" 
-        rel="stylesheet" 
+      <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+        rel="stylesheet"
       />
 
       {/* Custom Styles */}

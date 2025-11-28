@@ -2,8 +2,10 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { NotificationProvider } from "./context/NotificationContext"; // NEW
+import { NotificationProvider } from "./context/NotificationContext";
 import ProtectedRoute from "./context/ProtectedRoute";
+
+// Layout
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 
@@ -39,20 +41,19 @@ import ProductList from "./components/shopowner/ProductList";
 import CreateProduct from "./components/shopowner/CreateProduct";
 import EditProduct from "./components/shopowner/EditProduct";
 
-// NEW ADMIN COMPONENTS - Updated
+// Admin Components
 import AdminDashboard from "./components/admin/Dashboard";
 import AdminUsers from "./components/admin/AdminUsers";
 import AdminShops from "./components/admin/AdminShops";
 import AdminReviews from "./components/admin/AdminReviews";
-// Import other admin components as you create them
 import AdminBookings from "./components/admin/AdminBookings";
 import AdminPayments from "./components/admin/AdminPayments";
 import AdminAnnouncements from "./components/admin/AdminAnnouncements";
 import AdminAnalytics from "./components/admin/AdminAnalytics";
 import AdminActivities from "./components/admin/AdminActivities";
 
-// NEW NOTIFICATION COMPONENTS
-import NotificationsPage from "./components/NotificationsPage"; // NEW
+// Notifications Page
+import NotificationsPage from "./components/NotificationsPage";
 
 // CSS
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -63,12 +64,15 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <NotificationProvider> {/* NEW: Wrap with NotificationProvider */}
+        <NotificationProvider>
           <div className="App d-flex flex-column min-vh-100">
+
             <Navbar />
+
             <main className="flex-grow-1">
               <Routes>
-                {/* Public Routes */}
+
+                {/* PUBLIC ROUTES */}
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -78,8 +82,8 @@ function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/not-authorized" element={<NotAuthorized />} />
-                
-                {/* NEW: Notifications Route - Accessible to all authenticated users */}
+
+                {/* NOTIFICATIONS */}
                 <Route
                   path="/notifications"
                   element={
@@ -88,284 +92,149 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                
-                {/* Booking Routes */}
-                <Route 
-                  path="/booking" 
-                  element={
-                    <ProtectedRoute allowedRoles={["customer"]}>
-                      <CustomerBookings />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/book/:shopId" 
-                  element={
-                    <ProtectedRoute allowedRoles={["customer"]}>
-                      <CustomerBookings />
-                    </ProtectedRoute>
-                  } 
-                />
 
-                {/* Customer Routes */}
+                {/* CUSTOMER ROUTES */}
                 <Route
                   path="/customer/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={["customer"]}>
-                      <CustomerDashboard />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["customer"]}><CustomerDashboard /></ProtectedRoute>}
                 />
+
+                {/* ADDED: Booking route for direct salon booking */}
+                <Route
+                  path="/booking"
+                  element={<ProtectedRoute allowedRoles={["customer"]}><CustomerBookings /></ProtectedRoute>}
+                />
+
                 <Route
                   path="/customer/bookings"
-                  element={
-                    <ProtectedRoute allowedRoles={["customer"]}>
-                      <CustomerBookings />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["customer"]}><CustomerBookings /></ProtectedRoute>}
                 />
+
                 <Route
                   path="/customer/cart"
-                  element={
-                    <ProtectedRoute allowedRoles={["customer"]}>
-                      <CustomerCart />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["customer"]}><CustomerCart /></ProtectedRoute>}
                 />
+
                 <Route
                   path="/customer/profile"
-                  element={
-                    <ProtectedRoute allowedRoles={["customer"]}>
-                      <CustomerProfile />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["customer"]}><CustomerProfile /></ProtectedRoute>}
                 />
+
                 <Route
                   path="/customer/payment/:bookingId"
-                  element={
-                    <ProtectedRoute allowedRoles={["customer"]}>
-                      <Payment />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["customer"]}><Payment /></ProtectedRoute>}
                 />
 
-                {/* Shop Owner Routes */}
+                {/* SHOP OWNER ROUTES */}
                 <Route
                   path="/shopowner/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <ShopOwnerDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/shops"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <ShopOwnerShops />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/shops/create"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <CreateShop />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/shops/edit/:id"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <EditShop />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/bookings"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <ShopOwnerBookings />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/hairstyles"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <ShopOwnerHairstyles />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/products"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <ProductList />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/products/create"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <CreateProduct />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/products/edit/:id"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <EditProduct />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/profile"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <ShopOwnerProfile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/shopowner/settings"
-                  element={
-                    <ProtectedRoute allowedRoles={["shopowner"]}>
-                      <ShopOwnerSettings />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><ShopOwnerDashboard /></ProtectedRoute>}
                 />
 
-                {/* ================= ADMIN ROUTES - UPDATED ================= */}
+                <Route
+                  path="/shopowner/shops"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><ShopOwnerShops /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/shops/create"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><CreateShop /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/shops/edit/:id"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><EditShop /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/bookings"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><ShopOwnerBookings /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/hairstyles"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><ShopOwnerHairstyles /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/products"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><ProductList /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/products/create"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><CreateProduct /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/products/edit/:id"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><EditProduct /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/profile"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><ShopOwnerProfile /></ProtectedRoute>}
+                />
+
+                <Route
+                  path="/shopowner/settings"
+                  element={<ProtectedRoute allowedRoles={["shopowner"]}><ShopOwnerSettings /></ProtectedRoute>}
+                />
+
+                {/* ADMIN ROUTES */}
                 <Route
                   path="/admin/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}
                 />
-                
-                {/* User Management */}
+
                 <Route
                   path="/admin/users"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminUsers />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsers /></ProtectedRoute>}
                 />
-                
-                {/* Shop Management */}
+
                 <Route
                   path="/admin/shops"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminShops />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminShops /></ProtectedRoute>}
                 />
-                
-                {/* Booking Management */}
+
                 <Route
                   path="/admin/bookings"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminBookings />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminBookings /></ProtectedRoute>}
                 />
-                
-                {/* Review Management */}
+
                 <Route
                   path="/admin/reviews"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminReviews />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminReviews /></ProtectedRoute>}
                 />
-                <Route
-                  path="/admin/reviews/pending"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminReviews />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                {/* Payment & Financial Management */}
+
                 <Route
                   path="/admin/payments"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminPayments />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminPayments /></ProtectedRoute>}
                 />
-                <Route
-                  path="/admin/revenue"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminPayments />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/commissions"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminPayments />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                {/* Announcements */}
+
                 <Route
                   path="/admin/announcements"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminAnnouncements />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnnouncements /></ProtectedRoute>}
                 />
-                
-                {/* Analytics & Reports */}
+
                 <Route
                   path="/admin/analytics"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminAnalytics />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnalytics /></ProtectedRoute>}
                 />
-                <Route
-                  path="/admin/reports"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminAnalytics />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                {/* Activity Logs */}
+
                 <Route
                   path="/admin/activities"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin"]}>
-                      <AdminActivities />
-                    </ProtectedRoute>
-                  }
+                  element={<ProtectedRoute allowedRoles={["admin"]}><AdminActivities /></ProtectedRoute>}
                 />
 
                 {/* 404 */}
                 <Route path="*" element={<PageNotFound />} />
+
               </Routes>
             </main>
+
             <Footer />
+
           </div>
         </NotificationProvider>
       </AuthProvider>

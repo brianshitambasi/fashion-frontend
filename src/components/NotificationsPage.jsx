@@ -1,197 +1,130 @@
-import React, { useState } from 'react';
+// src/pages/NotificationsPage.jsx
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useNotifications } from '../context/NotificationContext';
 
 const NotificationsPage = () => {
-  const { 
-    notifications, 
-    unreadCount, 
-    loading, 
-    markAsRead, 
-    markAllAsRead, 
-    deleteNotification, 
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
     clearAll,
-    fetchNotifications 
+    pageInfo,
+    fetchNotifications,
+    loadMore
   } = useNotifications();
-  
-  const [filter, setFilter] = useState('all'); // 'all', 'unread'
 
-  const filteredNotifications = notifications.filter(notif => {
-    if (filter === 'unread') return !notif.isRead;
-    return true;
-  });
+  const observerRef = useRef(null);
+  const sentinelRef = useRef(null);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  useEffect(() => {
+    // load first page
+    fetchNotifications({ page: 1, limit: pageInfo.limit });
+    // eslint-disable-next-line
+  }, []);
 
-  const getPriorityBadge = (priority) => {
-    const priorityColors = {
-      high: 'danger',
-      medium: 'warning',
-      low: 'success'
-    };
-    
-    return (
-      <span className={`badge bg-${priorityColors[priority] || 'secondary'}`}>
-        {priority}
-      </span>
-    );
-  };
+  // IntersectionObserver to infinite-load
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    if (observerRef.current) observerRef.current.disconnect();
 
-  const getTypeIcon = (type) => {
-    const icons = {
-      booking: '📅',
-      payment: '💳',
-      review: '⭐',
-      announcement: '📢',
-      system: '⚙️'
-    };
-    return icons[type] || '🔔';
-  };
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // load more when sentinel appears
+          if (pageInfo.page < pageInfo.totalPages) {
+            loadMore();
+          }
+        }
+      });
+    }, { root: null, rootMargin: '200px', threshold: 0.1 });
 
-  const handleNotificationClick = async (notification) => {
-    if (!notification.isRead) {
-      await markAsRead(notification._id);
-    }
-    if (notification.actionUrl) {
-      window.location.href = notification.actionUrl;
-    }
-  };
+    observerRef.current.observe(sentinelRef.current);
+    return () => observerRef.current.disconnect();
+    // eslint-disable-next-line
+  }, [pageInfo.page, pageInfo.totalPages]);
 
-  if (loading) {
-    return (
-      <div className="container mt-4">
-        <div className="d-flex justify-content-center">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Mark-as-read on entering viewport for each unread item
+  const itemObserversRef = useRef(new Map());
+  const setItemObserver = useCallback((node, id, isRead) => {
+    if (!node || isRead) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // mark as read and unobserve
+          markAsRead(id).catch(() => {});
+          const obs = itemObserversRef.current.get(id);
+          if (obs) {
+            obs.disconnect();
+            itemObserversRef.current.delete(id);
+          }
+        }
+      });
+    }, { root: null, threshold: 0.5 });
+
+    observer.observe(node);
+    itemObserversRef.current.set(id, observer);
+  }, [markAsRead]);
+
+  const formatDate = (d) => new Date(d).toLocaleString();
 
   return (
     <div className="container mt-4">
-      <div className="row">
-        <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Notifications</h1>
-            <div>
-              {unreadCount > 0 && (
-                <button 
-                  onClick={markAllAsRead}
-                  className="btn btn-primary me-2"
-                >
-                  Mark All as Read
-                </button>
-              )}
-              <button 
-                onClick={clearAll}
-                className="btn btn-outline-danger"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Notifications</h1>
+        <div>
+          {unreadCount > 0 && <button onClick={markAllAsRead} className="btn btn-primary me-2">Mark All</button>}
+          <button onClick={clearAll} className="btn btn-outline-danger">Clear All</button>
+        </div>
+      </div>
 
-          {/* Filters */}
-          <div className="card mb-4">
-            <div className="card-body">
-              <div className="btn-group" role="group">
-                <button
-                  type="button"
-                  className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => setFilter('all')}
-                >
-                  All ({notifications.length})
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${filter === 'unread' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => setFilter('unread')}
-                >
-                  Unread ({unreadCount})
-                </button>
-              </div>
+      <div className="card">
+        <div className="card-body p-0">
+          {notifications.length === 0 && !loading ? (
+            <div className="text-center py-5">
+              <div style={{ fontSize: '3rem' }}>🔔</div>
+              <h5>No notifications</h5>
             </div>
-          </div>
-
-          {/* Notifications List */}
-          <div className="card">
-            <div className="card-body p-0">
-              {filteredNotifications.length === 0 ? (
-                <div className="text-center py-5">
-                  <div className="mb-3" style={{ fontSize: '3rem' }}>🔔</div>
-                  <h5>No notifications</h5>
-                  <p className="text-muted">
-                    {filter === 'unread' 
-                      ? "You're all caught up! No unread notifications." 
-                      : "You don't have any notifications yet."
-                    }
-                  </p>
-                </div>
-              ) : (
-                <div className="list-group list-group-flush">
-                  {filteredNotifications.map(notification => (
-                    <div
-                      key={notification._id}
-                      className={`list-group-item list-group-item-action ${
-                        !notification.isRead ? 'bg-light' : ''
-                      }`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleNotificationClick(notification)}
-                    >
-                      <div className="d-flex align-items-start">
-                        <div className="me-3" style={{ fontSize: '1.5rem' }}>
-                          {getTypeIcon(notification.type)}
-                        </div>
-                        <div className="flex-grow-1">
-                          <div className="d-flex justify-content-between align-items-start mb-1">
-                            <h6 className="mb-0">
-                              {notification.title}
-                              {!notification.isRead && (
-                                <span className="badge bg-primary ms-2">New</span>
-                              )}
-                            </h6>
-                            <div className="d-flex align-items-center">
-                              {getPriorityBadge(notification.priority)}
-                              <small className="text-muted ms-2">
-                                {formatDate(notification.createdAt)}
-                              </small>
-                            </div>
-                          </div>
-                          <p className="mb-1 text-muted">{notification.message}</p>
-                          {notification.actionUrl && (
-                            <small className="text-primary">
-                              Click to view details →
-                            </small>
-                          )}
-                        </div>
-                        <div className="ms-3">
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteNotification(notification._id);
-                            }}
-                            title="Delete notification"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
+          ) : (
+            <div className="list-group list-group-flush">
+              {notifications.map(n => (
+                <div
+                  key={n._id}
+                  ref={el => setItemObserver(el, n._id, n.isRead)}
+                  className={`list-group-item ${!n.isRead ? 'bg-light' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="d-flex align-items-start">
+                    <div className="me-3" style={{ fontSize: '1.5rem' }}>
+                      {n.type === 'booking' ? '📅' : n.type === 'payment' ? '💳' : '🔔'}
                     </div>
-                  ))}
+                    <div className="flex-grow-1" onClick={() => markAsRead(n._id)}>
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <h6 className="mb-0">{n.title} {!n.isRead && <span className="badge bg-primary ms-2">New</span>}</h6>
+                        <small className="text-muted">{formatDate(n.createdAt)}</small>
+                      </div>
+                      <p className="mb-1 text-muted">{n.message}</p>
+                      {n.actionUrl && <small className="text-primary">Click to view →</small>}
+                    </div>
+                    <div className="ms-3">
+                      <button className="btn btn-sm btn-outline-danger" onClick={() => deleteNotification(n._id)}>×</button>
+                    </div>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
+          )}
+
+          <div className="p-3 text-center">
+            {loading ? <div className="spinner-border" role="status" /> : (
+              pageInfo.page >= pageInfo.totalPages ? (
+                <div className="text-muted">No more notifications</div>
+              ) : (
+                <div ref={sentinelRef}><button className="btn btn-outline-primary" onClick={() => loadMore()}>Load more</button></div>
+              )
+            )}
           </div>
         </div>
       </div>

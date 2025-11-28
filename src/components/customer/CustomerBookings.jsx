@@ -99,25 +99,35 @@ const CustomerBookings = () => {
     }
   }, [isAuthenticated]);
 
-  const fetchBookings = async () => {
-    if (!isAuthenticated) return;
-    
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${BACKEND_URL}/booking`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setBookings(data);
-      }
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
+ const fetchBookings = async () => {
+  if (!isAuthenticated) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${BACKEND_URL}/booking`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      // Make sure bookings is always an array
+      // If your backend returns a single booking object:
+      const bookingsArray = data.booking
+        ? [data.booking]   // wrap single booking into array
+        : Array.isArray(data)
+          ? data           // already an array
+          : data.bookings || []; // fallback
+
+      setBookings(bookingsArray);
+    } else {
+      setBookings([]);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    setBookings([]);
+  }
+};
 
   const fetchCart = async () => {
     if (!isAuthenticated) return;
